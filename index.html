@@ -123,6 +123,20 @@ label.f{display:block;font-size:12px;font-weight:700;color:var(--ink2);margin:10
 .banner b{color:var(--acc)}
 hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
 .feelbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+/* exercise demos */
+.demo{width:100%;max-width:260px;margin:6px auto 0;display:block}
+.demo line,.demo path,.demo polyline{stroke:var(--acc);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.demo circle{fill:var(--acc)}
+.demo .gnd{stroke:var(--line);stroke-width:3}
+.demo .prop{stroke:var(--ink2);stroke-width:4;fill:none}
+.demo .f1{animation:swA 2.4s steps(1) infinite}
+.demo .f2{animation:swB 2.4s steps(1) infinite}
+@keyframes swA{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes swB{0%,49%{opacity:0}50%,100%{opacity:1}}
+#how-steps li{font-size:15px;line-height:1.75;margin-bottom:6px}
+.howbtn{margin:14px auto 0;display:block;padding:8px 16px;border-radius:999px;background:var(--card2);color:var(--acc);font-weight:700;font-size:13px}
+.libgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.libgrid button{background:var(--card2);border-radius:12px;padding:10px 8px;font-size:13px;font-weight:600;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -262,6 +276,11 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
     </ul>
   </div>
   <div class="card">
+    <h3>🎬 Move library</h3>
+    <p class="muted">Every exercise, with a moving demo and the 3 things that matter. Tap any move.</p>
+    <div id="lib"></div>
+  </div>
+  <div class="card">
     <h3>Backup</h3>
     <div class="tier2" style="margin-top:6px">
       <button class="btn ghost" onclick="exportData()">Export JSON</button>
@@ -283,9 +302,22 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
     <div class="ov-name" id="pl-name"></div>
     <div class="ov-target" id="pl-target"></div>
     <div class="ov-cue" id="pl-cue"></div>
+    <button class="howbtn" id="pl-how" onclick="showHowCurrent()">🎬 How to do it</button>
     <div class="ov-next" id="pl-next"></div>
   </div>
   <button class="btn primary ov-btn" id="pl-btn" onclick="playerNext()">Done →</button>
+</div>
+
+<!-- ============ HOW-TO ============ -->
+<div class="overlay" id="howto" style="z-index:60">
+  <div class="ov-top"><span class="muted small">Move guide</span><button class="x" onclick="closeHow()">Close ✕</button></div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+    <h2 id="how-title" style="font-size:24px;font-weight:800;margin-top:4px;letter-spacing:-.4px"></h2>
+    <div id="how-demo"></div>
+    <ol id="how-steps" style="padding-left:22px;margin-top:12px"></ol>
+    <p class="banner" id="how-avoid" style="display:none"></p>
+  </div>
+  <button class="btn primary" onclick="closeHow()">Got it →</button>
 </div>
 
 <!-- ============ FEEL PROMPT ============ -->
@@ -359,13 +391,144 @@ const DESK=[{n:'Stand + Reach Up',t:20,c:'Stand tall, arms overhead, stretch lon
 
 const SESS={
  A:{name:'Session A — Push & Core',desc:'Chest, arms, and the deep core that flattens the belly and protects the back.',
-    build(lv){return [ex(LV.push[lv.push],'Push'),{n:'Glute Bridge',t:'12 reps',c:'Squeeze at the top for 1 sec'},{n:'Dead Bug',t:'8 / side',c:'Lower back pressed flat to the floor'},ex(LV.plank[lv.plank],'Core')];}},
+    build(lv){const coreSlot=new Date().getDate()%2
+      ?ex(LV.plank[lv.plank])
+      :{n:'Side Plank',t:'20 sec / side',c:'Knees down is fine — this is the love-handle move'};
+     return [ex(LV.push[lv.push]),{n:'Glute Bridge',t:'12 reps',c:'Squeeze at the top for 1 sec'},{n:'Dead Bug',t:'8 / side',c:'Lower back pressed flat to the floor'},coreSlot];}},
  B:{name:'Session B — Legs & Back',desc:'The biggest muscles = the biggest calorie burn. Bird dogs rebuild your lower back.',
-    build(lv){return [ex(LV.squat[lv.squat],'Legs'),{n:'Bird Dog',t:'8 / side',c:'Slow. Opposite arm & leg. No wobble.'},ex(LV.lunge[Math.min(lv.lunge,LV.lunge.length-1)],'Legs'),{n:'Calf Raises',t:'15 reps',c:'Pause 1 sec at the top'}];}},
+    build(lv){const legSlot=new Date().getDate()%2
+      ?ex(LV.lunge[Math.min(lv.lunge,LV.lunge.length-1)])
+      :{n:'Superman',t:'10 reps',c:'Gentle lift, hold 2 sec'};
+     return [ex(LV.squat[lv.squat]),{n:'Bird Dog',t:'8 / side',c:'Slow. Opposite arm & leg. No wobble.'},legSlot,{n:'Calf Raises',t:'15 reps',c:'Pause 1 sec at the top'}];}},
  C:{name:'Session C — Stamina',desc:'Heart and lungs. 30 seconds on, short rest. This is what makes hikes feel easy.',
     build(lv){return LV.cardio[Math.min(lv.cardio,2)].map(e=>({n:e.n,t:30,c:e.c}));}}
 };
-function ex(l,ph){return {n:l.n,t:l.t,c:l.c||''};}
+function ex(l){return {n:l.n,t:l.t,c:l.c||''};}
+
+/* ================= MOVE GUIDE (offline demos + instructions) ================= */
+const DEMOS={
+pushwall:['<line class="prop" x1="38" y1="14" x2="38" y2="104"/><circle cx="74" cy="30" r="7"/><polyline points="76,38 90,72 100,103"/><polyline points="76,42 40,50"/>',
+ '<line class="prop" x1="38" y1="14" x2="38" y2="104"/><circle cx="62" cy="34" r="7"/><polyline points="66,42 86,74 100,103"/><polyline points="66,44 52,56 40,50"/>'],
+pushincline:['<rect class="prop" x="42" y="80" width="24" height="24" rx="3"/><circle cx="76" cy="42" r="7"/><polyline points="82,50 124,76 150,101"/><polyline points="82,50 56,80"/>',
+ '<rect class="prop" x="42" y="80" width="24" height="24" rx="3"/><circle cx="64" cy="54" r="7"/><polyline points="70,60 120,80 150,102"/><polyline points="70,60 64,74 56,80"/>'],
+pushknee:['<circle cx="42" cy="56" r="7"/><polyline points="54,63 112,84 130,101"/><polyline points="130,101 144,88"/><polyline points="58,66 60,100"/>',
+ '<circle cx="40" cy="80" r="7"/><polyline points="52,86 112,92 130,102"/><polyline points="130,102 144,90"/><polyline points="52,87 68,98 60,102"/>'],
+pushfull:['<circle cx="40" cy="53" r="7"/><polyline points="52,60 110,80 152,100"/><polyline points="56,63 58,100"/>',
+ '<circle cx="38" cy="79" r="7"/><polyline points="50,85 110,90 152,101"/><polyline points="50,86 66,98 60,102"/>'],
+squat:['<circle cx="100" cy="26" r="8"/><line x1="100" y1="34" x2="100" y2="72"/><line x1="100" y1="46" x2="122" y2="52"/><polyline points="100,72 100,88 100,104"/>',
+ '<circle cx="90" cy="54" r="8"/><polyline points="93,62 100,84"/><line x1="94" y1="66" x2="122" y2="60"/><polyline points="100,84 122,86 118,104"/>'],
+chairsquat:['<polyline class="prop" points="122,88 146,88 146,104"/><line class="prop" x1="124" y1="88" x2="124" y2="104"/><circle cx="100" cy="26" r="8"/><line x1="100" y1="34" x2="100" y2="72"/><line x1="100" y1="46" x2="120" y2="52"/><polyline points="100,72 100,88 100,104"/>',
+ '<polyline class="prop" points="122,88 146,88 146,104"/><line class="prop" x1="124" y1="88" x2="124" y2="104"/><circle cx="90" cy="54" r="8"/><polyline points="93,62 100,84"/><line x1="94" y1="66" x2="122" y2="60"/><polyline points="100,84 120,86 118,104"/>'],
+plank:['<circle cx="40" cy="64" r="7"/><polyline points="52,71 112,82 154,100"/><polyline points="52,72 52,90 72,92"/>',
+ '<circle cx="40" cy="65" r="7"/><polyline points="52,72 112,83 154,100"/><polyline points="52,73 52,90 72,92"/>'],
+sideplank:['<circle cx="44" cy="48" r="7"/><polyline points="54,56 118,84 150,96"/><polyline points="54,58 54,90 74,92"/><line x1="54" y1="56" x2="46" y2="32"/>',
+ '<circle cx="44" cy="52" r="7"/><polyline points="54,60 118,88 150,97"/><polyline points="54,62 54,90 74,92"/><line x1="54" y1="60" x2="46" y2="36"/>'],
+deadbug:['<circle cx="34" cy="95" r="7"/><line x1="44" y1="97" x2="104" y2="97"/><line x1="62" y1="95" x2="62" y2="60"/><polyline points="104,97 116,72 134,78"/>',
+ '<circle cx="34" cy="95" r="7"/><line x1="44" y1="97" x2="104" y2="97"/><line x1="62" y1="95" x2="84" y2="70"/><polyline points="104,97 122,84 142,90"/>'],
+birddog:['<circle cx="44" cy="56" r="7"/><line x1="56" y1="63" x2="112" y2="63"/><line x1="60" y1="63" x2="60" y2="102"/><line x1="108" y1="63" x2="108" y2="102"/><line x1="56" y1="63" x2="24" y2="52"/><line x1="112" y1="63" x2="146" y2="52"/>',
+ '<circle cx="44" cy="56" r="7"/><line x1="56" y1="63" x2="112" y2="63"/><line x1="60" y1="63" x2="60" y2="102"/><line x1="108" y1="63" x2="108" y2="102"/><line x1="66" y1="63" x2="66" y2="102"/><line x1="102" y1="63" x2="102" y2="102"/>'],
+bridge:['<circle cx="34" cy="96" r="7"/><line x1="44" y1="97" x2="98" y2="97"/><polyline points="98,97 118,76 126,103"/>',
+ '<circle cx="34" cy="96" r="7"/><line x1="44" y1="96" x2="104" y2="72"/><polyline points="104,72 118,76 126,103"/>'],
+lunge:['<circle cx="96" cy="28" r="8"/><line x1="96" y1="36" x2="96" y2="74"/><polyline points="96,74 96,104"/><line x1="96" y1="48" x2="112" y2="56"/>',
+ '<circle cx="92" cy="42" r="8"/><line x1="92" y1="50" x2="96" y2="80"/><polyline points="96,80 118,84 116,104"/><polyline points="96,80 80,98 64,102"/><line x1="92" y1="56" x2="108" y2="62"/>'],
+superman:['<circle cx="40" cy="95" r="7"/><line x1="50" y1="97" x2="150" y2="97"/><line x1="52" y1="96" x2="28" y2="96"/>',
+ '<circle cx="36" cy="86" r="7"/><polyline points="26,82 46,90 100,98 148,88"/>'],
+calf:['<circle cx="100" cy="30" r="8"/><line x1="100" y1="38" x2="100" y2="74"/><line x1="100" y1="74" x2="100" y2="104"/><line x1="100" y1="104" x2="114" y2="104"/>',
+ '<circle cx="100" cy="24" r="8"/><line x1="100" y1="32" x2="100" y2="70"/><line x1="100" y1="70" x2="102" y2="98"/><line x1="102" y1="98" x2="114" y2="103"/>'],
+march:['<circle cx="100" cy="24" r="8"/><line x1="100" y1="32" x2="100" y2="68"/><line x1="100" y1="68" x2="100" y2="104"/><polyline points="100,68 120,76 116,96"/><line x1="100" y1="44" x2="84" y2="56"/><line x1="100" y1="44" x2="118" y2="54"/>',
+ '<circle cx="100" cy="24" r="8"/><line x1="100" y1="32" x2="100" y2="68"/><line x1="100" y1="68" x2="100" y2="104"/><polyline points="100,68 80,76 84,96"/><line x1="100" y1="44" x2="116" y2="56"/><line x1="100" y1="44" x2="82" y2="54"/>'],
+jacks:['<circle cx="100" cy="26" r="8"/><line x1="100" y1="34" x2="100" y2="70"/><line x1="100" y1="44" x2="84" y2="64"/><line x1="100" y1="44" x2="116" y2="64"/><line x1="100" y1="70" x2="94" y2="104"/><line x1="100" y1="70" x2="106" y2="104"/>',
+ '<circle cx="100" cy="24" r="8"/><line x1="100" y1="32" x2="100" y2="68"/><line x1="100" y1="42" x2="78" y2="22"/><line x1="100" y1="42" x2="122" y2="22"/><line x1="100" y1="68" x2="82" y2="104"/><line x1="100" y1="68" x2="118" y2="104"/>'],
+box:['<circle cx="94" cy="32" r="8"/><line x1="96" y1="40" x2="100" y2="76"/><line x1="96" y1="46" x2="130" y2="42"/><polyline points="96,46 86,54 92,58"/><polyline points="100,76 90,104"/><polyline points="100,76 112,100"/>',
+ '<circle cx="98" cy="32" r="8"/><line x1="98" y1="40" x2="100" y2="76"/><line x1="98" y1="46" x2="64" y2="42"/><polyline points="98,46 108,54 102,58"/><polyline points="100,76 90,104"/><polyline points="100,76 112,100"/>'],
+climber:['<circle cx="42" cy="60" r="7"/><polyline points="54,66 112,80 150,98"/><line x1="54" y1="66" x2="54" y2="100"/><polyline points="112,80 88,90 96,102"/>',
+ '<circle cx="42" cy="60" r="7"/><polyline points="54,66 112,80 96,102"/><line x1="54" y1="66" x2="54" y2="100"/><polyline points="112,80 132,92 128,103"/>'],
+catcow:['<circle cx="42" cy="50" r="7"/><path d="M54,60 Q84,74 112,62"/><line x1="58" y1="62" x2="58" y2="102"/><line x1="110" y1="62" x2="110" y2="102"/>',
+ '<circle cx="44" cy="66" r="7"/><path d="M54,66 Q84,44 112,64"/><line x1="58" y1="64" x2="58" y2="102"/><line x1="110" y1="64" x2="110" y2="102"/>'],
+childpose:['<circle cx="42" cy="88" r="7"/><path d="M52,90 Q86,66 112,90"/><line x1="50" y1="92" x2="24" y2="98"/><polyline points="112,90 112,102 96,102"/>',
+ '<circle cx="42" cy="89" r="7"/><path d="M52,91 Q86,68 112,91"/><line x1="50" y1="93" x2="24" y2="99"/><polyline points="112,91 112,102 96,102"/>'],
+kneechest:['<circle cx="34" cy="92" r="7"/><line x1="44" y1="95" x2="96" y2="97"/><line x1="96" y1="97" x2="146" y2="97"/><polyline points="96,97 84,74 66,80"/><line x1="58" y1="92" x2="80" y2="78"/>',
+ '<circle cx="34" cy="92" r="7"/><line x1="44" y1="95" x2="96" y2="97"/><line x1="96" y1="97" x2="146" y2="97"/><polyline points="96,97 80,70 62,76"/><line x1="56" y1="90" x2="74" y2="74"/>'],
+fig4:['<circle cx="34" cy="94" r="7"/><line x1="44" y1="96" x2="96" y2="96"/><polyline points="96,96 104,72 124,84"/><polyline points="96,96 120,92 126,103"/>',
+ '<circle cx="34" cy="94" r="7"/><line x1="44" y1="96" x2="96" y2="96"/><polyline points="96,96 100,70 120,82"/><polyline points="96,96 120,92 126,103"/>'],
+chest:['<line class="prop" x1="132" y1="16" x2="132" y2="104"/><circle cx="100" cy="32" r="8"/><line x1="100" y1="40" x2="100" y2="78"/><line x1="100" y1="48" x2="132" y2="42"/><polyline points="100,78 96,104"/><polyline points="100,78 108,102"/>',
+ '<line class="prop" x1="132" y1="16" x2="132" y2="104"/><circle cx="106" cy="32" r="8"/><line x1="106" y1="40" x2="102" y2="78"/><line x1="106" y1="48" x2="132" y2="42"/><polyline points="102,78 96,104"/><polyline points="102,78 110,102"/>'],
+reach:['<circle cx="100" cy="30" r="8"/><line x1="100" y1="38" x2="100" y2="74"/><line x1="100" y1="46" x2="88" y2="66"/><line x1="100" y1="46" x2="112" y2="66"/><polyline points="100,74 96,104"/><polyline points="100,74 104,104"/>',
+ '<circle cx="100" cy="24" r="8"/><line x1="100" y1="32" x2="100" y2="72"/><line x1="100" y1="40" x2="88" y2="16"/><line x1="100" y1="40" x2="112" y2="16"/><polyline points="100,72 96,104"/><polyline points="100,72 104,104"/>'],
+neck:['<circle cx="92" cy="30" r="8"/><line x1="96" y1="37" x2="100" y2="46"/><line x1="100" y1="46" x2="100" y2="80"/><line x1="100" y1="52" x2="86" y2="72"/><line x1="100" y1="52" x2="114" y2="72"/>',
+ '<circle cx="108" cy="30" r="8"/><line x1="104" y1="37" x2="100" y2="46"/><line x1="100" y1="46" x2="100" y2="80"/><line x1="100" y1="52" x2="86" y2="72"/><line x1="100" y1="52" x2="114" y2="72"/>'],
+hipcircle:['<circle cx="100" cy="28" r="8"/><polyline points="100,36 92,56 100,74"/><line x1="92" y1="56" x2="80" y2="60"/><line x1="92" y1="56" x2="106" y2="60"/><polyline points="100,74 94,104"/><polyline points="100,74 108,104"/>',
+ '<circle cx="100" cy="28" r="8"/><polyline points="100,36 108,56 100,74"/><line x1="108" y1="56" x2="94" y2="60"/><line x1="108" y1="56" x2="120" y2="60"/><polyline points="100,74 94,104"/><polyline points="100,74 108,104"/>'],
+armcircle:['<circle cx="100" cy="30" r="8"/><line x1="100" y1="38" x2="100" y2="76"/><line x1="100" y1="46" x2="76" y2="30"/><line x1="100" y1="46" x2="124" y2="30"/><polyline points="100,76 96,104"/><polyline points="100,76 104,104"/>',
+ '<circle cx="100" cy="30" r="8"/><line x1="100" y1="38" x2="100" y2="76"/><line x1="100" y1="46" x2="80" y2="66"/><line x1="100" y1="46" x2="120" y2="66"/><polyline points="100,76 96,104"/><polyline points="100,76 104,104"/>'],
+hipflexor:['<circle cx="92" cy="40" r="8"/><line x1="92" y1="48" x2="96" y2="78"/><polyline points="96,78 120,82 118,104"/><polyline points="96,78 78,100 62,102"/>',
+ '<circle cx="98" cy="40" r="8"/><line x1="98" y1="48" x2="104" y2="78"/><polyline points="104,78 124,82 122,104"/><polyline points="104,78 84,100 66,102"/>']
+};
+const INFO={
+pushwall:{t:'Wall Pushup',s:["Stand an arm's length from a wall, hands flat at shoulder height","Keep your body in one straight line and lean in until your nose nearly touches","Push back until arms are straight — that's one"],a:"Don't bend at the hips — move like a plank."},
+pushincline:{t:'Incline Pushup',s:["Hands on a table or bed edge, shoulder-width apart","Walk your feet back until your body is a straight ramp","Lower your chest to the edge, push back up"],a:"Keep elbows ~45° from your body, not flared wide."},
+pushknee:{t:'Knee Pushup',s:["On the floor, knees down, hands under shoulders","Straight line from head to knees — squeeze the belly","Chest to the floor, press back up"],a:"Hips sagging or sticking up means you're tired — stop the set there."},
+pushfull:{t:'Full Pushup',s:["Hands under shoulders, legs straight, toes down","Whole body one rigid line","Lower chest to the floor, press up strong"],a:"Don't let the lower back dip — that's what hurts backs."},
+squat:{t:'Squat',s:["Feet shoulder-width, toes slightly out","Sit back like you're reaching for a chair, chest up, arms forward","Down until thighs are near parallel, then drive up through the heels"],a:"Don't let knees cave inward or heels lift."},
+chairsquat:{t:'Chair Squat',s:["Stand in front of a chair, feet shoulder-width","Sit back slowly until you lightly touch the seat","Stand right back up without resting"],a:"Don't plop down — the slow descent is the exercise."},
+plank:{t:'Plank',s:["Forearms down, elbows under shoulders (knees down for Knee Plank)","Body one straight line — squeeze belly and glutes","Keep breathing; don't hold your breath"],a:"Sagging hips strain the lower back. Straight, or take a break."},
+sideplank:{t:'Side Plank',s:["Lie on your side, elbow directly under the shoulder","Knees down (easier) or feet stacked — lift the hips","Straight line from ear to knee; switch sides halfway"],a:"This is THE love-handle move. Don't let the hips drop."},
+deadbug:{t:'Dead Bug',s:["Lie on your back, arms straight up, knees bent 90°","Press your lower back FLAT into the floor — keep it there","Slowly lower opposite arm and leg, return, switch"],a:"If the lower back arches off the floor, make the movement smaller."},
+birddog:{t:'Bird Dog',s:["On all fours, hands under shoulders, knees under hips","Extend opposite arm and leg until level with your back","Pause 2 seconds, return slowly, switch"],a:"Slow beats far. No wobbling, no arching — this move rebuilds your back."},
+bridge:{t:'Glute Bridge',s:["Lie on your back, knees bent, feet flat near your hips","Drive through the heels and lift hips until body is straight","Squeeze the glutes 1 second at the top, lower slowly"],a:"Lift with the glutes, not by arching the back higher."},
+lunge:{t:'Reverse Lunge',s:["Step one foot back and drop the back knee toward the floor","Front knee stays over the ankle, chest tall","Push through the front heel to stand; switch sides"],a:"Balance shaky? Hold a wall — that's the supported version, same benefit."},
+superman:{t:'Superman',s:["Lie face down, arms extended forward","Gently lift arms, chest and legs a few inches","Hold 2 seconds, lower with control"],a:"A small lift is enough. Don't crank the neck up."},
+calf:{t:'Calf Raises',s:["Stand tall, fingertips on a wall for balance","Rise onto your toes as high as you can","Pause 1 second, lower slowly"],a:"The slow lowering is where the muscle is built — don't rush it."},
+march:{t:'March / High Knees',s:["Stand tall, drive knees up one at a time","Swing the arms naturally with each step","Faster = harder; keep the breathing steady"]},
+jacks:{t:'Jumping / Step Jacks',s:["Jump feet apart while arms swing overhead","Jump back together, arms down","Step Jacks version: step side-to-side instead of jumping — zero impact"]},
+box:{t:'Shadow Boxing',s:["Fists up by your chin, knees soft","Alternate straight punches, exhale sharply on each","Rotate the hips into every punch — it's a whole-body move"]},
+climber:{t:'Mountain Climbers',s:["Start in a straight-arm plank","Drive one knee toward the chest, step it back, switch","Slow and controlled — hips stay low the whole time"],a:"Speed comes later; form first."},
+catcow:{t:'Cat–Cow',s:["On all fours (or standing with hands on knees)","Inhale: drop the belly, lift the chest — cow","Exhale: round the spine up to the ceiling — cat"],a:"Move slowly with the breath. This is medicine for your lower back."},
+childpose:{t:"Child's Pose",s:["Kneel and sit the hips back onto your heels","Stretch arms forward, forehead toward the floor","Breathe deep into the lower back"]},
+kneechest:{t:'Knee to Chest',s:["Lie on your back, pull one knee gently to the chest","Hold 20 seconds — feel the lower back release","Switch legs"]},
+fig4:{t:'Figure-4 Stretch',s:["Lie on your back, cross one ankle over the other knee","Pull the lower thigh toward you","20 seconds each side — releases the deep hip and glute"]},
+chest:{t:'Doorway Chest Stretch',s:["Forearm on a doorframe, elbow at shoulder height","Step forward gently until the chest stretches","This is the reverse of the desk hunch — 20 seconds each side"]},
+reach:{t:'Stand + Reach Up',s:["Stand tall, interlace fingers, push palms to the ceiling","Stretch as tall as you can for 15–20 seconds","Add a small lean left and right"]},
+neck:{t:'Neck Rolls',s:["Drop chin to chest, roll the ear slowly to one shoulder","Half-circles only, along the front","Slow and gentle — never force it"]},
+hipcircle:{t:'Hip Circles',s:["Hands on hips, feet shoulder-width","Draw big slow circles with the hips","Both directions"]},
+armcircle:{t:'Arm Circles',s:["Arms straight out to the sides","Small circles growing bigger, then reverse","Keep shoulders relaxed, away from the ears"]},
+hipflexor:{t:'Hip Flexor Stretch',s:["Kneel on one knee (put a cushion under it)","Push the hips gently forward, torso tall","15 seconds each side — sitting all day shortens these"],a:"Feel it in the front of the hip, not the lower back."}
+};
+const ALIAS={'Wall Pushup':'pushwall','Wall Pushups':'pushwall','Incline Pushup':'pushincline','Knee Pushup':'pushknee','Full Pushup':'pushfull',
+'Chair Squat':'chairsquat','Chair Squat Taps':'chairsquat','10 Chair Squats':'chairsquat',
+'Squat':'squat','Pause Squat':'squat','Squats (tempo)':'squat','10 Squats':'squat','Jump-to-Squat (light)':'squat',
+'Knee Plank':'plank','Plank':'plank','Side Plank':'sideplank',
+'Supported Reverse Lunge':'lunge','Reverse Lunge':'lunge','Superman':'superman','Calf Raises':'calf','Glute Bridge':'bridge','Dead Bug':'deadbug','Bird Dog':'birddog',
+'Fast March':'march','High Knees (soft)':'march','High Knees':'march','March in Place':'march',
+'Shadow Boxing':'box','Step Jacks':'jacks','Jumping Jacks':'jacks','Mountain Climbers (slow)':'climber',
+'Cat–Cow':'catcow','Standing Cat–Cow':'catcow',"Child's Pose":'childpose','Knee to Chest':'kneechest','Figure-4 Stretch':'fig4',
+'Doorway Chest Stretch':'chest','Doorway Chest Opener':'chest','Stand + Reach Up':'reach','Neck Rolls':'neck','Hip Circles':'hipcircle',
+'Arm Circles + Shoulder Rolls':'armcircle','Hip Flexor Stretch':'hipflexor'};
+function demoSvg(key){const d=DEMOS[key];if(!d)return '';
+ return '<svg class="demo" viewBox="0 0 200 120"><line class="gnd" x1="8" y1="104" x2="192" y2="104"/><g class="f1">'+d[0]+'</g><g class="f2">'+d[1]+'</g></svg>';}
+function showHow(key){
+ const info=INFO[key];if(!info)return;
+ if(P&&P.timer){clearInterval(P.timer);P.paused=true;}
+ document.getElementById('how-title').textContent=info.t;
+ document.getElementById('how-demo').innerHTML=demoSvg(key);
+ document.getElementById('how-steps').innerHTML=info.s.map(x=>'<li>'+x+'</li>').join('');
+ const av=document.getElementById('how-avoid');
+ if(info.a){av.style.display='';av.innerHTML='<b>Watch out:</b> '+info.a;}else av.style.display='none';
+ document.getElementById('howto').classList.add('on');
+}
+function closeHow(){
+ document.getElementById('howto').classList.remove('on');
+ if(P&&P.paused){P.paused=false;startTick();}
+}
+function showHowCurrent(){if(P&&P.steps[P.idx])showHow(ALIAS[P.steps[P.idx].n]);}
+function renderLib(){
+ const groups=[['Strength & core',['pushwall','pushincline','pushknee','pushfull','squat','chairsquat','lunge','bridge','plank','sideplank','deadbug','birddog','superman','calf']],
+  ['Stamina',['march','jacks','box','climber']],
+  ['Back, stretch & desk',['catcow','childpose','kneechest','fig4','chest','reach','neck','hipcircle','armcircle','hipflexor']]];
+ document.getElementById('lib').innerHTML=groups.map(([g,keys])=>
+  '<h4 style="font-size:13px;color:var(--acc);margin:12px 0 2px">'+g+'</h4><div class="libgrid">'+
+  keys.map(k=>'<button onclick="showHow(\''+k+'\')">'+INFO[k].t+'</button>').join('')+'</div>').join('');
+}
 
 /* ================= SESSION PLAYER ================= */
 let P=null; /* {steps,idx,timer,kind,session,tier} */
@@ -407,11 +570,16 @@ function playerNext(){
  document.getElementById('pl-cue').textContent=s.c||'';
  const nx=P.steps[P.idx+1];
  document.getElementById('pl-next').textContent=nx?('Next: '+nx.n):'Last one — finish strong';
+ document.getElementById('pl-how').style.display=(!s.rest&&ALIAS[s.n])?'':'none';
  const tgt=document.getElementById('pl-target'),btn=document.getElementById('pl-btn');
  if(typeof s.t==='number'){
-  let left=s.t;tgt.textContent=left+'s';btn.textContent='Skip →';
-  P.timer=setInterval(()=>{left--;tgt.textContent=left+'s';if(left<=0){playerNext();}},1000);
- }else{tgt.textContent=s.t;btn.textContent='Done →';}
+  P.left=s.t;tgt.textContent=P.left+'s';btn.textContent='Skip →';startTick();
+ }else{P.left=null;tgt.textContent=s.t;btn.textContent='Done →';}
+}
+function startTick(){
+ if(!P||P.left==null)return;
+ clearInterval(P.timer);
+ P.timer=setInterval(()=>{P.left--;document.getElementById('pl-target').textContent=P.left+'s';if(P.left<=0)playerNext();},1000);
 }
 function quitSession(){
  clearInterval(P&&P.timer);
@@ -698,6 +866,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 });
 
 render();
+renderLib();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 </script>
 </body>
