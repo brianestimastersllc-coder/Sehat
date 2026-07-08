@@ -319,6 +319,13 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
     <div id="lib"></div>
   </div>
   <div class="card">
+    <h3>🔊 Sounds</h3>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:6px">
+      <input type="checkbox" id="snd-tgl" onchange="S.sound=this.checked;save();if(this.checked)sfx.log();">
+      <span class="muted">Gentle chimes, ticks and breathing tones — no music, no noise</span>
+    </label>
+  </div>
+  <div class="card">
     <h3>Backup</h3>
     <div class="tier2" style="margin-top:6px">
       <button class="btn ghost" onclick="exportData()">Export JSON</button>
@@ -392,7 +399,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
 <script>
 /* ================= STATE ================= */
 const KEY='sehat-data-v1';
-const blank=()=>({days:{},levels:{push:0,squat:0,plank:0,lunge:0,cardio:0},easy:{},metrics:[],lastStrength:null,lastStrengthDate:null,away:false,deskTotal:0});
+const blank=()=>({days:{},levels:{push:0,squat:0,plank:0,lunge:0,cardio:0},easy:{},metrics:[],lastStrength:null,lastStrengthDate:null,away:false,deskTotal:0,sound:true});
 let S=load();
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.days)return Object.assign(blank(),d);}catch(e){}return blank();}
 function save(){localStorage.setItem(KEY,JSON.stringify(S));}
@@ -591,16 +598,18 @@ function buildSteps(kind,tier){
 function startSession(kind,tier){
  tier=tier||'full';
  P={steps:buildSteps(kind,tier),idx:-1,kind,tier};
+ actx(); // unlock audio inside the tap gesture (iOS requirement)
  document.getElementById('player').classList.add('on');
  const d=document.getElementById('pl-dots');d.innerHTML=P.steps.map(()=>'<div class="dot"></div>').join('');
  playerNext();
 }
 function playerNext(){
  if(!P)return;
- clearInterval(P.timer);beep(P.idx>=0);
+ clearInterval(P.timer);
  P.idx++;
  if(P.idx>=P.steps.length){return endSession();}
  const s=P.steps[P.idx];
+ if(P.idx>0){s.rest?sfx.rest():sfx.go();}
  document.querySelectorAll('#pl-dots .dot').forEach((el,i)=>el.classList.toggle('done',i<=P.idx));
  document.getElementById('pl-count').textContent=(P.idx+1)+'/'+P.steps.length;
  document.getElementById('pl-phase').textContent=s.ph||'';
@@ -617,7 +626,7 @@ function playerNext(){
 function startTick(){
  if(!P||P.left==null)return;
  clearInterval(P.timer);
- P.timer=setInterval(()=>{P.left--;document.getElementById('pl-target').textContent=P.left+'s';if(P.left<=0)playerNext();},1000);
+ P.timer=setInterval(()=>{P.left--;document.getElementById('pl-target').textContent=P.left+'s';if(P.left>=1&&P.left<=3)sfx.tick();if(P.left<=0)playerNext();},1000);
 }
 function quitSession(){
  clearInterval(P&&P.timer);
@@ -629,7 +638,8 @@ function quitSession(){
 function endSession(){
  clearInterval(P.timer);
  document.getElementById('player').classList.remove('on');
- if(P.kind==='desk'){S.deskTotal++;save();P=null;toast('Desk reset done. Back feels that. 🌿');render();return;}
+ if(P.kind==='desk'){S.deskTotal++;save();P=null;sfx.log();toast('Desk reset done. Back feels that. 🌿');render();return;}
+ sfx.finish();
  document.getElementById('feel').classList.add('on');
 }
 function finishSession(feel){
@@ -646,7 +656,7 @@ function finishSession(feel){
    const keys=P.kind==='A'?['push','plank']:P.kind==='B'?['squat','lunge']:['cardio'];
    let upped=[];
    keys.forEach(k=>{const max=(k==='cardio'?LV.cardio.length:LV[k].length)-1;if(S.levels[k]<max){S.levels[k]++;upped.push(k);}});
-   if(upped.length)toast('⬆️ Level up! Next time gets a little stronger.');
+   if(upped.length){sfx.levelup();toast('⬆️ Level up! Next time gets a little stronger.');}
   }
  } else if(feel==='hard'){S.easy[P.kind]=0;}
  else {S.easy[P.kind]=0;}
@@ -656,9 +666,9 @@ function finishSession(feel){
 }
 
 /* ================= LOG WALK / HIKE ================= */
-function logWalk(){const d=day();if(!d.act)d.act='walk';d.walk=(d.walk||0)+15;save();toast('Walk logged. Movement counts. 🚶');render();}
+function logWalk(){const d=day();if(!d.act)d.act='walk';d.walk=(d.walk||0)+15;save();sfx.log();toast('Walk logged. Movement counts. 🚶');render();}
 function logHike(){const km=parseFloat(document.getElementById('hike-km').value)||0;if(!km){toast('Enter the km first');return;}
- const d=day();d.act='hike';d.km=km;save();toast('🏔️ '+km+' km hike logged. Beast.');render();}
+ const d=day();d.act='hike';d.km=km;save();sfx.finish();toast('🏔️ '+km+' km hike logged. Beast.');render();}
 
 /* ================= CHAIN MATH ================= */
 function activeDay(k){const d=S.days[k];return d&&d.act?d.act:null;}
@@ -762,14 +772,14 @@ function renderAnchors(){
  $('water-n').textContent=w+' / 8 glasses';
  $('junk-btn').classList.toggle('on',!!d.junk);
 }
-function tapAnchor(k){const d=day();d.anchors=d.anchors||[];const i=d.anchors.indexOf(k);i>=0?d.anchors.splice(i,1):d.anchors.push(k);
+function tapAnchor(k){const d=day();d.anchors=d.anchors||[];const i=d.anchors.indexOf(k);if(i>=0)d.anchors.splice(i,1);else{d.anchors.push(k);sfx.pop();}
  if(d.anchors.length===4)toast('4 of 5 anchors — target hit 🎯');save();renderAnchors();}
-function setWater(n){const d=day();d.water=d.water===n?n-1:n;save();renderAnchors();}
+function setWater(n){const d=day();const dec=d.water===n;d.water=dec?n-1:n;if(!dec)sfx.drip();save();renderAnchors();}
 function renderMood(){
  const d=day();
  $('moods').innerHTML=['😞','😕','😐','🙂','😄'].map((e,i)=>'<button class="mood'+(d.mood===i+1?' on':'')+'" onclick="setMood('+(i+1)+')">'+e+'</button>').join('');
 }
-function setMood(n){const d=day();d.mood=d.mood===n?null:n;save();renderMood();}
+function setMood(n){const d=day();d.mood=d.mood===n?null:n;if(d.mood)sfx.pop();save();renderMood();}
 $('junk-btn').onclick=()=>{const d=day();d.junk=!d.junk;save();renderAnchors();
  if(d.junk)toast('Noted, no guilt. Next meal is a fresh start.');};
 
@@ -813,14 +823,15 @@ $('day-note').addEventListener('input',e=>{day().note=e.target.value;save();});
 /* breathing */
 let BR=null;
 function startBreath(){
+ actx(); // unlock audio inside the tap gesture (iOS requirement)
  $('breath').classList.add('on');
  const phases=[['Breathe in…',true],['Hold',null],['Breathe out…',false],['Hold',null]];
  let pi=0,total=120,c=$('bc'),t=$('bc-t'),ph=$('bphase');
  function step(){
   const [label,grow]=phases[pi%4];
   t.textContent=label.replace('…','');ph.textContent=label;
-  if(grow===true)c.style.transform='scale(1)';
-  else if(grow===false)c.style.transform='scale(.7)';
+  if(grow===true){c.style.transform='scale(1)';sfx.breathIn();}
+  else if(grow===false){c.style.transform='scale(.7)';sfx.breathOut();}
   pi++;
  }
  step();
@@ -932,13 +943,47 @@ function importData(inp){
 
 /* ================= SOUND ================= */
 let AC=null;
-function beep(on){
- if(!on)return;
- try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
- const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
- o.frequency.value=880;g.gain.setValueAtTime(.12,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.18);
- o.start();o.stop(AC.currentTime+.2);}catch(e){}
+/* ================= SOUND (WebAudio — fully offline, calm palette) ================= */
+function actx(){
+ if(S.sound===false)return null;
+ try{
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  if(AC.state==='suspended')AC.resume();
+  return AC;
+ }catch(e){return null;}
 }
+function tone(f,dur,delay,vol,type){
+ const c=actx();if(!c)return;
+ const t=c.currentTime+(delay||0);
+ const o=c.createOscillator(),g=c.createGain();
+ o.type=type||'sine';o.frequency.value=f;
+ g.gain.setValueAtTime(.0001,t);
+ g.gain.linearRampToValueAtTime(vol||.12,t+.02);
+ g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ o.connect(g);g.connect(c.destination);
+ o.start(t);o.stop(t+dur+.05);
+}
+function breathTone(f){
+ const c=actx();if(!c)return;
+ const t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+ o.type='sine';o.frequency.value=f;
+ g.gain.setValueAtTime(.0001,t);
+ g.gain.linearRampToValueAtTime(.06,t+1.4);
+ g.gain.linearRampToValueAtTime(.0001,t+3.7);
+ o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+3.8);
+}
+const sfx={
+ tick(){tone(880,.08,0,.05);},                                    // last 3 seconds of a countdown
+ go(){tone(587,.12,0,.11);tone(880,.14,.09,.09);},                // next exercise
+ rest(){tone(392,.35,0,.09);},                                    // rest begins — low & calm
+ finish(){[523,659,784,1047].forEach((f,i)=>tone(f,.3,i*.13,.13));}, // session complete
+ levelup(){[523,659,784,880,1047].forEach((f,i)=>tone(f,.22,i*.09,.13));},
+ log(){tone(587,.15,0,.11);tone(784,.3,.12,.11);},                // something good logged
+ pop(){tone(700,.06,0,.06);},                                     // small tap feedback
+ drip(){tone(900,.06,0,.07);tone(1250,.09,.07,.06);},             // water glass
+ breathIn(){breathTone(392);},
+ breathOut(){breathTone(294);}
+};
 
 /* ================= NAV ================= */
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
@@ -950,6 +995,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 
 render();
 renderLib();
+document.getElementById('snd-tgl').checked=S.sound!==false;
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 </script>
 </body>
