@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1a16">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Sehat</title>
+<style>
+:root{
+  --bg:#f6f4ee; --card:#ffffff; --card2:#eef0e9; --ink:#1e2b26; --ink2:#5c6b64;
+  --acc:#2e7d5b; --accSoft:#e3f0e9; --amber:#d9a441; --amberSoft:#f7ecd7;
+  --red:#c05b4d; --line:#e4e2d9; --shadow:0 2px 10px rgba(30,43,38,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0f1a16; --card:#16241e; --card2:#1c2d25; --ink:#e8e6df; --ink2:#94a29a;
+    --acc:#4cc38a; --accSoft:#1c3a2d; --amber:#e0b25e; --amberSoft:#3a3120;
+    --red:#e08a7c; --line:#233830; --shadow:0 2px 10px rgba(0,0,0,.25); }
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);
+  padding-bottom:calc(74px + env(safe-area-inset-bottom));overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
+.page{display:none;max-width:560px;margin:0 auto;padding:14px 16px 20px}
+.page.on{display:block}
+header.top{max-width:560px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top)) 16px 2px;display:flex;justify-content:space-between;align-items:baseline}
+header.top h1{font-size:22px;font-weight:800;letter-spacing:-.3px}
+header.top h1 span{color:var(--acc)}
+header.top .urdu{font-size:15px;color:var(--ink2)}
+.card{background:var(--card);border-radius:18px;padding:16px;margin-top:12px;box-shadow:var(--shadow)}
+.card h3{font-size:15px;font-weight:700;margin-bottom:8px}
+.muted{color:var(--ink2);font-size:13px;line-height:1.5}
+.small{font-size:12px}
+.row{display:flex;gap:8px;align-items:center}
+.grow{flex:1}
+button{font-family:inherit;border:none;cursor:pointer;color:inherit;background:none;font-size:14px}
+.btn{display:block;width:100%;padding:14px;border-radius:14px;font-weight:700;font-size:16px;text-align:center}
+.btn.primary{background:var(--acc);color:#fff}
+.btn.soft{background:var(--accSoft);color:var(--acc)}
+.btn.ghost{background:var(--card2);color:var(--ink2);font-weight:600;font-size:14px;padding:11px}
+.btn:active{transform:scale(.985)}
+.pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.pill{padding:9px 13px;border-radius:999px;background:var(--card2);color:var(--ink2);font-weight:600;font-size:13px}
+.pill.on{background:var(--accSoft);color:var(--acc)}
+.greet{margin-top:14px}
+.greet .big{font-size:24px;font-weight:800;letter-spacing:-.4px}
+.greet .sub{color:var(--ink2);margin-top:3px;font-size:14px}
+/* chain */
+.chain{display:flex;gap:6px;margin-top:12px;align-items:center;flex-wrap:wrap}
+.link{width:26px;height:26px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink2)}
+.link.done{background:var(--acc);color:#fff}
+.link.bent{background:var(--amber);color:#fff}
+.link.today{outline:2px solid var(--acc);outline-offset:2px}
+.statgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.stat{background:var(--card2);border-radius:14px;padding:10px;text-align:center}
+.stat .n{font-size:20px;font-weight:800;color:var(--acc)}
+.stat .l{font-size:11px;color:var(--ink2);margin-top:2px}
+/* session card */
+.sess{margin-top:4px}
+.sess .name{font-size:19px;font-weight:800}
+.sess .desc{color:var(--ink2);font-size:13px;margin-top:3px;line-height:1.5}
+.tierbtns{display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px}
+.tier2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* anchors */
+.anchors{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.anchor{background:var(--card2);border-radius:13px;padding:9px 2px;text-align:center;font-size:11px;color:var(--ink2);font-weight:600}
+.anchor .e{font-size:20px;display:block;margin-bottom:2px;filter:grayscale(1);opacity:.6}
+.anchor.on{background:var(--accSoft);color:var(--acc)}
+.anchor.on .e{filter:none;opacity:1}
+.water{display:flex;gap:5px;margin-top:10px}
+.cup{flex:1;height:30px;border-radius:8px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:13px;opacity:.45}
+.cup.on{background:#cfe6f5;opacity:1}
+@media (prefers-color-scheme: dark){ .cup.on{background:#1e3d52} }
+.moods{display:flex;gap:6px;margin-top:10px}
+.mood{flex:1;font-size:24px;padding:8px 0;border-radius:12px;background:var(--card2);text-align:center;filter:grayscale(1);opacity:.55}
+.mood.on{background:var(--accSoft);filter:none;opacity:1}
+/* nav */
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;
+  max-width:560px;margin:0 auto;padding:8px 4px calc(8px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--ink2);font-weight:600;padding:4px 0}
+nav button .i{font-size:21px;filter:grayscale(1);opacity:.55}
+nav button.on{color:var(--acc)}
+nav button.on .i{filter:none;opacity:1}
+/* overlay player */
+.overlay{position:fixed;inset:0;background:var(--bg);z-index:50;display:none;flex-direction:column;padding:calc(16px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
+.overlay.on{display:flex}
+.ov-top{display:flex;justify-content:space-between;align-items:center}
+.ov-top .x{font-size:15px;color:var(--ink2);padding:8px;font-weight:600}
+.dots{display:flex;gap:4px;flex:1;margin:0 12px}
+.dot{flex:1;height:4px;border-radius:2px;background:var(--card2)}
+.dot.done{background:var(--acc)}
+.ov-mid{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center}
+.ov-phase{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber)}
+.ov-name{font-size:32px;font-weight:800;margin-top:8px;letter-spacing:-.5px}
+.ov-target{font-size:52px;font-weight:800;color:var(--acc);margin-top:14px;font-variant-numeric:tabular-nums}
+.ov-cue{color:var(--ink2);margin-top:14px;font-size:15px;line-height:1.5;padding:0 10px}
+.ov-next{margin-top:20px;font-size:13px;color:var(--ink2)}
+.ov-btn{margin-top:16px}
+/* breathing */
+.breath-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.bcircle{width:170px;height:170px;border-radius:50%;background:var(--accSoft);display:flex;align-items:center;justify-content:center;
+  transition:transform 4s ease-in-out;transform:scale(.7)}
+.bcircle .in{width:120px;height:120px;border-radius:50%;background:var(--acc);opacity:.85;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px}
+.bphase{margin-top:26px;font-size:15px;color:var(--ink2);height:20px}
+/* charts */
+.chart{margin-top:8px;width:100%}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.cal .d{aspect-ratio:1;border-radius:7px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink2)}
+.cal .d.a{background:var(--acc);color:#fff}
+.cal .d.b{background:var(--amber);color:#fff}
+.cal .h{background:none;font-weight:700;aspect-ratio:auto;padding:2px 0}
+input,select{font-family:inherit;font-size:15px;padding:11px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--ink);width:100%}
+label.f{display:block;font-size:12px;font-weight:700;color:var(--ink2);margin:10px 0 4px}
+.guide h4{font-size:14px;margin:14px 0 4px;color:var(--acc)}
+.guide p,.guide li{font-size:13.5px;line-height:1.65;color:var(--ink)}
+.guide ul{padding-left:18px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:100px;background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none;max-width:85%;text-align:center}
+.toast.on{opacity:1}
+.banner{background:var(--accSoft);border-radius:14px;padding:12px 14px;margin-top:12px;font-size:13.5px;line-height:1.55;color:var(--ink)}
+.banner b{color:var(--acc)}
+hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
+.feelbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+</style>
+</head>
+<body>
+
+<header class="top"><h1>Sehat <span>·</span></h1><div class="urdu">صحت</div></header>
+
+<!-- ============ AAJ (TODAY) ============ -->
+<div class="page on" id="pg-aaj">
+  <div class="greet"><div class="big" id="greet-big"></div><div class="sub" id="greet-sub"></div></div>
+
+  <div class="card">
+    <div class="row"><h3 class="grow">Your chain · زنجیر</h3><span class="muted small" id="chain-label"></span></div>
+    <div class="chain" id="chain"></div>
+    <div class="statgrid">
+      <div class="stat"><div class="n" id="st-month">0</div><div class="l">days moved<br>this month</div></div>
+      <div class="stat"><div class="n" id="st-chain">0</div><div class="l">current<br>chain</div></div>
+      <div class="stat"><div class="n" id="st-weeks">0</div><div class="l">weeks won<br>(4+ days)</div></div>
+    </div>
+  </div>
+
+  <div class="card sess" id="today-card"></div>
+
+  <div class="card">
+    <h3>Protein anchors · Hit 4 of 5</h3>
+    <div class="anchors" id="anchors"></div>
+    <div class="row" style="margin-top:12px"><h3 class="grow" style="margin:0">Water</h3><span class="muted small" id="water-n"></span></div>
+    <div class="water" id="water"></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h3 class="grow">How's the mood?</h3><button class="pill" id="junk-btn">🍟 had junk</button></div>
+    <div class="moods" id="moods"></div>
+  </div>
+
+  <div class="card" id="sunday-card" style="display:none">
+    <h3>🏔️ Sunday — Hike day</h3>
+    <p class="muted">Even a short one counts. Log it when you're back.</p>
+    <div class="row" style="margin-top:10px">
+      <input type="number" id="hike-km" placeholder="km" step="0.5" min="0" style="width:90px">
+      <button class="btn soft grow" onclick="logHike()">Log hike</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ KHANA (MEALS) ============ -->
+<div class="page" id="pg-khana">
+  <div class="card">
+    <div class="row"><h3 class="grow">Where are you today?</h3></div>
+    <div class="tier2" style="margin-top:8px">
+      <button class="btn ghost" id="mode-home" onclick="setAway(false)">🏠 Ghar (home)</button>
+      <button class="btn ghost" id="mode-away" onclick="setAway(true)">🧳 Room / away</button>
+    </div>
+  </div>
+  <div class="card guide" id="meal-guide"></div>
+  <div class="card guide">
+    <h3>The 6 rules (that's all)</h3>
+    <ul>
+      <li><b>Protein first.</b> Eggs, dahi, daal — eat these before filling up on roti.</li>
+      <li><b>2 roti cap</b> per meal. Roti is fine; the 4th roti is the belly.</li>
+      <li><b>Drinks don't get sugar.</b> Water, lassi (namkeen), chai with less sugar. No soft drinks with meals.</li>
+      <li><b>Snack = fruit or nuts.</b> Banana + a handful of peanuts/channa replaces biscuits and chips.</li>
+      <li><b>One planned junk meal a week.</b> Enjoy it fully, zero guilt, and it's done. Planned junk is not failure — unplanned junk spirals.</li>
+      <li><b>Kitchen closes at 10 PM.</b> Late-night eating on your sleep schedule is the silent belly-builder.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ MANN (MIND) ============ -->
+<div class="page" id="pg-mann">
+  <div class="card">
+    <h3>Saans · Breathing</h3>
+    <p class="muted">2 minutes of box breathing. Use it when scrolling has you numb, before sleep, or mid-work when the shoulders creep up.</p>
+    <button class="btn primary" style="margin-top:12px" onclick="startBreath()">Start breathing · 2 min</button>
+  </div>
+  <div class="card">
+    <h3>Desk reset · 2 min</h3>
+    <p class="muted">For the back and the 16-hour screen days. Do this every time you notice you've been sitting over an hour. It's 6 gentle moves.</p>
+    <button class="btn soft" style="margin-top:12px" onclick="startSession('desk')">Start desk reset</button>
+    <p class="muted small" style="margin-top:8px" id="desk-count"></p>
+  </div>
+  <div class="card">
+    <h3>Sleep last night</h3>
+    <div class="pillrow" id="sleep-pills"></div>
+  </div>
+  <div class="card">
+    <h3>One line for today</h3>
+    <input id="day-note" placeholder="Anything on your mind… (saved automatically)">
+  </div>
+  <div class="card guide">
+    <h3>Why this works (read once)</h3>
+    <p>Your old pattern: all-in for a week → miss one day → shame → quit. The fix isn't more discipline, it's a system where <b>missing once costs nothing</b>. Rule of this app: <b>never miss twice</b>. A 2-minute Spark day fully counts. A week is won at 4 active days, not 7. You're not chasing perfect — you're chasing "still in the game."</p>
+  </div>
+</div>
+
+<!-- ============ SAFAR (PROGRESS) ============ -->
+<div class="page" id="pg-safar">
+  <div class="card">
+    <div class="row"><h3 class="grow" id="cal-title"></h3>
+      <button class="pill" onclick="calShift(-1)">‹</button><button class="pill" onclick="calShift(1)">›</button></div>
+    <div class="cal" id="cal"></div>
+    <p class="muted small" style="margin-top:8px">🟩 moved &nbsp; 🟨 spark/minimum &nbsp; Every colored box is a win.</p>
+  </div>
+  <div class="card">
+    <h3>Body · Sunday check</h3>
+    <div class="row">
+      <input type="number" id="m-w" placeholder="weight kg" step="0.1">
+      <input type="number" id="m-waist" placeholder="waist inch" step="0.25">
+      <button class="btn soft" style="width:auto;padding:11px 16px" onclick="logMetric()">Save</button>
+    </div>
+    <div id="w-chart"></div>
+  </div>
+  <div class="card">
+    <h3>Numbers</h3>
+    <div class="statgrid">
+      <div class="stat"><div class="n" id="st-total">0</div><div class="l">total days<br>moved</div></div>
+      <div class="stat"><div class="n" id="st-best">0</div><div class="l">best<br>chain</div></div>
+      <div class="stat"><div class="n" id="st-hikes">0</div><div class="l">hike km<br>total</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Your levels</h3>
+    <div id="levels-list"></div>
+    <p class="muted small" style="margin-top:8px">Levels rise automatically when a session feels easy twice in a row.</p>
+  </div>
+</div>
+
+<!-- ============ APP / SETTINGS ============ -->
+<div class="page" id="pg-app">
+  <div class="card guide">
+    <h3>The system, in 30 seconds</h3>
+    <ul>
+      <li><b>Every day has 3 sizes:</b> Full (~15 min), Lite (5 min), Spark (2 min). All three count.</li>
+      <li><b>Never miss twice.</b> One missed day bends the chain (amber) — it doesn't break it. Two in a row and the chain rests; your comeback restarts it, and nothing else is lost.</li>
+      <li><b>Week won = any 4 active days.</b></li>
+      <li><b>Rotation:</b> A (Push & Core) → B (Legs & Back) → C (Stamina), walks in between, Sunday hike.</li>
+      <li><b>Back pain:</b> no sit-ups, no crunches. Dead bugs, bird dogs, bridges and planks build the same core while healing the lower back.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Backup</h3>
+    <div class="tier2" style="margin-top:6px">
+      <button class="btn ghost" onclick="exportData()">Export JSON</button>
+      <button class="btn ghost" onclick="document.getElementById('imp').click()">Import</button>
+    </div>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
+  </div>
+  <div class="card">
+    <h3>About</h3>
+    <p class="muted">Sehat v1 — built for Attique by Claude, July 2026. Offline-first: everything lives on this phone. No accounts, no ads, no cloud, no shame.</p>
+  </div>
+</div>
+
+<!-- ============ SESSION PLAYER ============ -->
+<div class="overlay" id="player">
+  <div class="ov-top"><button class="x" onclick="quitSession()">End</button><div class="dots" id="pl-dots"></div><span class="muted small" id="pl-count"></span></div>
+  <div class="ov-mid">
+    <div class="ov-phase" id="pl-phase"></div>
+    <div class="ov-name" id="pl-name"></div>
+    <div class="ov-target" id="pl-target"></div>
+    <div class="ov-cue" id="pl-cue"></div>
+    <div class="ov-next" id="pl-next"></div>
+  </div>
+  <button class="btn primary ov-btn" id="pl-btn" onclick="playerNext()">Done →</button>
+</div>
+
+<!-- ============ FEEL PROMPT ============ -->
+<div class="overlay" id="feel">
+  <div class="ov-mid">
+    <div class="ov-name">Done. 🎉</div>
+    <div class="ov-cue" id="feel-msg">That's a link in the chain. How did it feel?</div>
+    <div class="feelbtns">
+      <button class="btn ghost" onclick="finishSession('easy')">😌 Easy</button>
+      <button class="btn soft" onclick="finishSession('right')">💪 Right</button>
+      <button class="btn ghost" onclick="finishSession('hard')">🥵 Hard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BREATHING ============ -->
+<div class="overlay" id="breath">
+  <div class="ov-top"><button class="x" onclick="stopBreath()">End</button><span class="muted small" id="br-left"></span></div>
+  <div class="breath-wrap">
+    <div class="bcircle" id="bc"><div class="in" id="bc-t">Ready</div></div>
+    <div class="bphase" id="bphase"></div>
+  </div>
+</div>
+
+<nav>
+  <button data-pg="aaj" class="on"><span class="i">🌿</span>Aaj</button>
+  <button data-pg="khana"><span class="i">🍲</span>Khana</button>
+  <button data-pg="mann"><span class="i">🧘</span>Mann</button>
+  <button data-pg="safar"><span class="i">📈</span>Safar</button>
+  <button data-pg="app"><span class="i">⚙️</span>App</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= STATE ================= */
+const KEY='sehat-data-v1';
+const blank=()=>({days:{},levels:{push:0,squat:0,plank:0,lunge:0,cardio:0},easy:{},metrics:[],lastStrength:null,lastStrengthDate:null,away:false,deskTotal:0});
+let S=load();
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.days)return Object.assign(blank(),d);}catch(e){}return blank();}
+function save(){localStorage.setItem(KEY,JSON.stringify(S));}
+function tk(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function day(k){k=k||tk();if(!S.days[k])S.days[k]={};return S.days[k];}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2600);}
+
+/* ================= EXERCISES ================= */
+const LV={
+ push:[{n:'Wall Pushup',t:'12 reps'},{n:'Incline Pushup',t:'10 reps',c:'Hands on table or bed edge'},{n:'Knee Pushup',t:'8 reps'},{n:'Full Pushup',t:'6–10 reps'}],
+ squat:[{n:'Chair Squat',t:'10 reps',c:'Sit back to the chair, stand tall'},{n:'Squat',t:'12 reps'},{n:'Pause Squat',t:'10 reps',c:'2-sec hold at the bottom'},{n:'Squat',t:'20 reps'}],
+ plank:[{n:'Knee Plank',t:20},{n:'Plank',t:25},{n:'Plank',t:40},{n:'Plank',t:60}],
+ lunge:[{n:'Supported Reverse Lunge',t:'6 / side',c:'Hold a wall or chair for balance'},{n:'Reverse Lunge',t:'8 / side'},{n:'Reverse Lunge',t:'12 / side'}],
+ cardio:[
+  [{n:'Fast March',c:'Pump the arms, knees up'},{n:'Shadow Boxing',c:'Loose shoulders, breathe'},{n:'Chair Squat Taps',c:'Quick light touches'},{n:'Step Jacks',c:'Low-impact jumping jack'}],
+  [{n:'High Knees (soft)',c:'Land quiet'},{n:'Shadow Boxing',c:'Add body rotation'},{n:'Squats (tempo)',c:'Steady rhythm'},{n:'Jumping Jacks',c:'Full ones now'}],
+  [{n:'High Knees',c:'Push the pace'},{n:'Shadow Boxing',c:'Fast hands, move your feet'},{n:'Jump-to-Squat (light)',c:'Small hop, soft landing'},{n:'Mountain Climbers (slow)',c:'Hips low, controlled'}]
+ ]
+};
+const WARM=[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up'},
+ {n:'Cat–Cow',t:40,c:'On all fours. Slow. Your lower back loves this one.',ph:'Warm-up'},
+ {n:'Arm Circles + Shoulder Rolls',t:30,c:'Undo the desk',ph:'Warm-up'},
+ {n:'Hip Circles',t:30,c:'Big slow circles, both ways',ph:'Warm-up'}];
+const COOL=[{n:"Child's Pose",t:30,c:'Sink the hips back, breathe into the lower back',ph:'Cooldown'},
+ {n:'Knee to Chest',t:40,c:'20 sec each side, lying down',ph:'Cooldown'},
+ {n:'Figure-4 Stretch',t:40,c:'Ankle over knee, 20 sec each side',ph:'Cooldown'},
+ {n:'Doorway Chest Stretch',t:30,c:'Open the chest — reverse of hunching',ph:'Cooldown'}];
+const DESK=[{n:'Stand + Reach Up',t:20,c:'Stand tall, arms overhead, stretch long',ph:'Desk reset'},
+ {n:'Neck Rolls',t:20,c:'Slow half-circles, chin to chest',ph:'Desk reset'},
+ {n:'Standing Cat–Cow',t:20,c:'Hands on knees, round then arch',ph:'Desk reset'},
+ {n:'Doorway Chest Opener',t:20,c:'Squeeze shoulder blades',ph:'Desk reset'},
+ {n:'Hip Flexor Stretch',t:30,c:'15 sec each side — sitting shortens these',ph:'Desk reset'},
+ {n:'10 Chair Squats',t:'10 reps',c:'And you\'re done. Back to work lighter.',ph:'Desk reset'}];
+
+const SESS={
+ A:{name:'Session A — Push & Core',desc:'Chest, arms, and the deep core that flattens the belly and protects the back.',
+    build(lv){return [ex(LV.push[lv.push],'Push'),{n:'Glute Bridge',t:'12 reps',c:'Squeeze at the top for 1 sec'},{n:'Dead Bug',t:'8 / side',c:'Lower back pressed flat to the floor'},ex(LV.plank[lv.plank],'Core')];}},
+ B:{name:'Session B — Legs & Back',desc:'The biggest muscles = the biggest calorie burn. Bird dogs rebuild your lower back.',
+    build(lv){return [ex(LV.squat[lv.squat],'Legs'),{n:'Bird Dog',t:'8 / side',c:'Slow. Opposite arm & leg. No wobble.'},ex(LV.lunge[Math.min(lv.lunge,LV.lunge.length-1)],'Legs'),{n:'Calf Raises',t:'15 reps',c:'Pause 1 sec at the top'}];}},
+ C:{name:'Session C — Stamina',desc:'Heart and lungs. 30 seconds on, short rest. This is what makes hikes feel easy.',
+    build(lv){return LV.cardio[Math.min(lv.cardio,2)].map(e=>({n:e.n,t:30,c:e.c}));}}
+};
+function ex(l,ph){return {n:l.n,t:l.t,c:l.c||''};}
+
+/* ================= SESSION PLAYER ================= */
+let P=null; /* {steps,idx,timer,kind,session,tier} */
+function buildSteps(kind,tier){
+ if(kind==='desk')return DESK.slice();
+ const lv=S.levels, main=SESS[kind].build(lv);
+ let steps=[];
+ if(tier==='spark'){
+  steps=[{n:'10 Squats',t:'10 reps',c:'Any style. Just move.',ph:'Spark'},{n:'Wall Pushups',t:30,c:'As many easy ones as you like',ph:'Spark'},{n:'Cat–Cow',t:30,c:'Give the back 30 good seconds',ph:'Spark'}];
+  return steps;
+ }
+ const rounds=tier==='lite'?1:3;
+ steps=WARM.slice();
+ for(let r=1;r<=rounds;r++){
+  main.forEach((e,i)=>{steps.push(Object.assign({ph:'Round '+r+' of '+rounds},e));
+   if(!(r===rounds&&i===main.length-1))steps.push({n:'Rest',t:kind==='C'?15:20,c:'Shake it out, breathe',ph:'Rest',rest:1});});
+  if(r<rounds)steps.push({n:'Round done — rest',t:40,c:'Water sip. Next round in a moment.',ph:'Rest',rest:1});
+ }
+ steps=steps.concat(tier==='lite'?COOL.slice(0,2):COOL);
+ return steps;
+}
+function startSession(kind,tier){
+ tier=tier||'full';
+ P={steps:buildSteps(kind,tier),idx:-1,kind,tier};
+ document.getElementById('player').classList.add('on');
+ const d=document.getElementById('pl-dots');d.innerHTML=P.steps.map(()=>'<div class="dot"></div>').join('');
+ playerNext();
+}
+function playerNext(){
+ if(!P)return;
+ clearInterval(P.timer);beep(P.idx>=0);
+ P.idx++;
+ if(P.idx>=P.steps.length){return endSession();}
+ const s=P.steps[P.idx];
+ document.querySelectorAll('#pl-dots .dot').forEach((el,i)=>el.classList.toggle('done',i<=P.idx));
+ document.getElementById('pl-count').textContent=(P.idx+1)+'/'+P.steps.length;
+ document.getElementById('pl-phase').textContent=s.ph||'';
+ document.getElementById('pl-name').textContent=s.n;
+ document.getElementById('pl-cue').textContent=s.c||'';
+ const nx=P.steps[P.idx+1];
+ document.getElementById('pl-next').textContent=nx?('Next: '+nx.n):'Last one — finish strong';
+ const tgt=document.getElementById('pl-target'),btn=document.getElementById('pl-btn');
+ if(typeof s.t==='number'){
+  let left=s.t;tgt.textContent=left+'s';btn.textContent='Skip →';
+  P.timer=setInterval(()=>{left--;tgt.textContent=left+'s';if(left<=0){playerNext();}},1000);
+ }else{tgt.textContent=s.t;btn.textContent='Done →';}
+}
+function quitSession(){
+ clearInterval(P&&P.timer);
+ const enough=P&&P.idx>=Math.min(5,P.steps.length-1);
+ if(P&&P.kind!=='desk'&&enough){endSession();return;}
+ if(P&&P.kind==='desk'&&P.idx>=2){S.deskTotal++;save();}
+ P=null;document.getElementById('player').classList.remove('on');render();
+}
+function endSession(){
+ clearInterval(P.timer);
+ document.getElementById('player').classList.remove('on');
+ if(P.kind==='desk'){S.deskTotal++;save();P=null;toast('Desk reset done. Back feels that. 🌿');render();return;}
+ document.getElementById('feel').classList.add('on');
+}
+function finishSession(feel){
+ document.getElementById('feel').classList.remove('on');
+ const d=day();
+ d.act=P.tier==='spark'?'spark':(P.tier==='lite'?'lite':'full');
+ d.session=P.kind;d.feel=feel;
+ if(P.tier!=='spark'){S.lastStrength=P.kind;S.lastStrengthDate=tk();}
+ /* auto level-up: easy twice in a row on a full session */
+ if(feel==='easy'&&P.tier==='full'){
+  S.easy[P.kind]=(S.easy[P.kind]||0)+1;
+  if(S.easy[P.kind]>=2){
+   S.easy[P.kind]=0;
+   const keys=P.kind==='A'?['push','plank']:P.kind==='B'?['squat','lunge']:['cardio'];
+   let upped=[];
+   keys.forEach(k=>{const max=(k==='cardio'?LV.cardio.length:LV[k].length)-1;if(S.levels[k]<max){S.levels[k]++;upped.push(k);}});
+   if(upped.length)toast('⬆️ Level up! Next time gets a little stronger.');
+  }
+ } else if(feel==='hard'){S.easy[P.kind]=0;}
+ else {S.easy[P.kind]=0;}
+ save();P=null;
+ const msgs={spark:'Chain alive. That 2 minutes mattered more than it felt. 🔗',lite:'Lite day logged — that is a full win in this system. 🌿',full:'Full session done. Quietly becoming someone who shows up. 💚'};
+ toast(msgs[d.act]);render();
+}
+
+/* ================= LOG WALK / HIKE ================= */
+function logWalk(){const d=day();if(!d.act)d.act='walk';d.walk=(d.walk||0)+15;save();toast('Walk logged. Movement counts. 🚶');render();}
+function logHike(){const km=parseFloat(document.getElementById('hike-km').value)||0;if(!km){toast('Enter the km first');return;}
+ const d=day();d.act='hike';d.km=km;save();toast('🏔️ '+km+' km hike logged. Beast.');render();}
+
+/* ================= CHAIN MATH ================= */
+function activeDay(k){const d=S.days[k];return d&&d.act?d.act:null;}
+function chainCalc(){
+ /* walk back from today; today not yet active doesn't break */
+ let n=0,graceUsed=false,cur=new Date();
+ if(activeDay(tk(cur)))n++;
+ cur.setDate(cur.getDate()-1);
+ for(let i=0;i<400;i++){
+  const a=activeDay(tk(cur));
+  if(a){n++;}
+  else{
+   if(graceUsed||n===0&&!activeDay(tk()))break;
+   if(graceUsed)break;
+   /* allow one single-day gap inside the chain */
+   const prev=new Date(cur);prev.setDate(prev.getDate()-1);
+   if(activeDay(tk(prev))){graceUsed=true;}else break;
+  }
+  cur.setDate(cur.getDate()-1);
+ }
+ return n;
+}
+function bestChain(){
+ const ks=Object.keys(S.days).filter(k=>S.days[k].act).sort();
+ let best=0,run=0,prev=null;
+ ks.forEach(k=>{
+  if(prev){const gap=(new Date(k)-new Date(prev))/86400000;
+   run=gap<=2?run+1:1;}else run=1;
+  best=Math.max(best,run);prev=k;});
+ return best;
+}
+function weeksWon(){
+ let won=0;const now=new Date();
+ for(let w=0;w<26;w++){
+  const mon=new Date(now);mon.setDate(mon.getDate()-mon.getDay()+1-7*w);
+  let c=0;for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(d.getDate()+i);if(activeDay(tk(d)))c++;}
+  if(c>=4)won++;
+ }
+ return won;
+}
+
+/* ================= RENDER ================= */
+const $=id=>document.getElementById(id);
+function render(){renderGreet();renderChain();renderToday();renderAnchors();renderMood();renderKhana();renderMann();renderSafar();}
+function renderGreet(){
+ const h=new Date().getHours();
+ const g=h<5?'Still up? 🌙':h<12?'Subah bakhair ☀️':h<17?'Salam, Attique 👋':'Good evening 🌆';
+ $('greet-big').textContent=g;
+ const d=day();
+ $('greet-sub').textContent=d.act?'Today is already a green day. Anything extra is bonus.':'One small move today keeps the chain alive.';
+}
+function renderChain(){
+ const wrap=$('chain');wrap.innerHTML='';
+ for(let i=13;i>=0;i--){
+  const dt=new Date();dt.setDate(dt.getDate()-i);
+  const a=activeDay(tk(dt));
+  const el=document.createElement('div');el.className='link'+(a?(a==='spark'?' bent':' done'):'')+(i===0?' today':'');
+  el.textContent=dt.getDate();
+  wrap.appendChild(el);
+ }
+ $('chain-label').textContent='last 14 days';
+ $('st-chain').textContent=chainCalc();
+ const mk=tk().slice(0,7);
+ $('st-month').textContent=Object.keys(S.days).filter(k=>k.startsWith(mk)&&S.days[k].act).length;
+ $('st-weeks').textContent=weeksWon();
+}
+function nextStrength(){
+ if(!S.lastStrength)return 'A';
+ return {A:'B',B:'C',C:'A'}[S.lastStrength];
+}
+function renderToday(){
+ const d=day(),card=$('today-card'),dow=new Date().getDay();
+ $('sunday-card').style.display=dow===0?'':'none';
+ if(d.act){
+  const names={full:'Full session',lite:'Lite session',spark:'Spark',walk:'Walk',hike:'Hike'};
+  card.innerHTML='<div class="name">✅ '+(names[d.act]||'Done')+(d.session?' — '+d.session:'')+'</div>'+
+   '<div class="desc">Logged for today. Rest, walk, or stack a bonus — all optional.</div>'+
+   '<div class="tier2" style="margin-top:12px"><button class="btn ghost" onclick="logWalk()">+ 15 min walk</button>'+
+   '<button class="btn ghost" onclick="startSession(\'desk\')">Desk reset</button></div>';
+  return;
+ }
+ const sk=nextStrength(),s=SESS[sk];
+ const strengthYesterday=(()=>{const y=new Date();y.setDate(y.getDate()-1);const yd=S.days[tk(y)];return yd&&(yd.act==='full'||yd.act==='lite');})();
+ let head=strengthYesterday?'<div class="banner" style="margin:0 0 10px"><b>Recovery suggestion:</b> you trained yesterday — a 15-min walk is the smart move today. Or train anyway, your call.</div>':'';
+ card.innerHTML=head+'<div class="name">'+s.name+'</div><div class="desc">'+s.desc+'</div>'+
+  '<div class="tierbtns">'+
+  '<button class="btn primary" onclick="startSession(\''+sk+'\',\'full\')">Start · ~15 min</button>'+
+  '<div class="tier2">'+
+  '<button class="btn soft" onclick="startSession(\''+sk+'\',\'lite\')">Lite · 5 min</button>'+
+  '<button class="btn soft" onclick="startSession(\''+sk+'\',\'spark\')">Spark · 2 min</button></div>'+
+  '<button class="btn ghost" onclick="logWalk()">Or log a 15-min walk 🚶</button></div>';
+}
+const ANCHORS=[['egg','🥚','Eggs 2–3'],['dahi','🥣','Dahi'],['milk','🥛','Milk/lassi'],['daal','🍲','Daal/channa'],['nuts','🥜','Nuts/fruit']];
+function renderAnchors(){
+ const d=day(),got=d.anchors||[];
+ $('anchors').innerHTML=ANCHORS.map(([k,e,l])=>'<button class="anchor'+(got.includes(k)?' on':'')+'" onclick="tapAnchor(\''+k+'\')"><span class="e">'+e+'</span>'+l+'</button>').join('');
+ const w=d.water||0;
+ $('water').innerHTML=Array.from({length:8},(_,i)=>'<button class="cup'+(i<w?' on':'')+'" onclick="setWater('+(i+1)+')">💧</button>').join('');
+ $('water-n').textContent=w+' / 8 glasses';
+ $('junk-btn').classList.toggle('on',!!d.junk);
+}
+function tapAnchor(k){const d=day();d.anchors=d.anchors||[];const i=d.anchors.indexOf(k);i>=0?d.anchors.splice(i,1):d.anchors.push(k);
+ if(d.anchors.length===4)toast('4 of 5 anchors — target hit 🎯');save();renderAnchors();}
+function setWater(n){const d=day();d.water=d.water===n?n-1:n;save();renderAnchors();}
+function renderMood(){
+ const d=day();
+ $('moods').innerHTML=['😞','😕','😐','🙂','😄'].map((e,i)=>'<button class="mood'+(d.mood===i+1?' on':'')+'" onclick="setMood('+(i+1)+')">'+e+'</button>').join('');
+}
+function setMood(n){const d=day();d.mood=d.mood===n?null:n;save();renderMood();}
+$('junk-btn').onclick=()=>{const d=day();d.junk=!d.junk;save();renderAnchors();
+ if(d.junk)toast('Noted, no guilt. Next meal is a fresh start.');};
+
+/* ================= KHANA ================= */
+function setAway(v){S.away=v;save();renderKhana();}
+function renderKhana(){
+ $('mode-home').className='btn '+(S.away?'ghost':'soft');
+ $('mode-away').className='btn '+(S.away?'soft':'ghost');
+ $('meal-guide').innerHTML=S.away?GUIDE_AWAY:GUIDE_HOME;
+}
+const GUIDE_HOME=`<h3>🏠 Ghar plan — your normal foods, arranged right</h3>
+<h4>Meal 1 · around 10–11 AM</h4>
+<p><b>2–3 eggs</b> (omelette/boiled/fried in little oil) + <b>1–2 roti</b> + chai (half sugar). If eggs bore you, alternate with dahi + fruit.</p>
+<h4>Meal 2 · 7–8 PM</h4>
+<p><b>Daal / channa / lobia</b> (proper bowl, this is your protein) + <b>sabzi</b> + <b>1–2 roti</b> + <b>dahi bowl</b>. Daal + roti together = complete protein — the combo is the trick.</p>
+<h4>Snack slots (this is where the belly is won)</h4>
+<p>Banana or seasonal fruit · handful of peanuts/roasted channa · glass of milk or namkeen lassi. These replace biscuits, chips, and the 1 AM junk raid.</p>
+<h4>Two-meal note</h4>
+<p>Two meals is fine — even good — <i>if</i> both meals carry protein. The failure mode is roti-heavy meals + sugary chai + biscuits between. Anchor each meal with eggs/daal/dahi and the 2-meal pattern becomes a natural fat-loss rhythm.</p>`;
+const GUIDE_AWAY=`<h3>🧳 Room/away survival — hotel food, smart orders</h3>
+<h4>What to order</h4>
+<p><b>Daal + roti + salad</b> is the best hotel order in Pakistan — cheap, everywhere, high protein. Channa, lobia, mix sabzi all work. Say <b>"oil kam"</b> — hotel daal drowns in oil and that oil is half your belly.</p>
+<h4>Your room kit (buy once a week)</h4>
+<p>• <b>Eggs</b> — get them boiled from any hotel/tandoor, or keep a small kettle-boil trick<br>• <b>Dahi packets</b> — any store<br>• <b>Peanuts/roasted channa + bananas</b> — the anti-junk snack drawer<br>• <b>Milk packets</b> for the evening.</p>
+<h4>Junk protocol</h4>
+<p>Away days are junk-risk days. The rule is not "no junk" — it's <b>planned junk</b>: one enjoyable junk meal a week, chosen in advance. If an unplanned one happens, tap 🍟 in the app and move on. One meal never made anyone fat; the spiral after it does.</p>
+<h4>Missed-meal fix</h4>
+<p>Missing meals then eating anything at midnight is the pattern to kill. If a meal is slipping past, bridge it in 2 minutes: 2 boiled eggs, or dahi + banana, or milk + peanuts. Small, boring, effective.</p>`;
+
+/* ================= MANN ================= */
+function renderMann(){
+ $('desk-count').textContent=S.deskTotal?('Desk resets done so far: '+S.deskTotal):'';
+ const d=day();
+ const opts=['<5','5–6','6–7','7–8','8+'];
+ $('sleep-pills').innerHTML=opts.map(o=>'<button class="pill'+(d.sleep===o?' on':'')+'" onclick="setSleep(\''+o+'\')">'+o+' hrs</button>').join('');
+ $('day-note').value=d.note||'';
+}
+function setSleep(o){const d=day();d.sleep=d.sleep===o?null:o;save();renderMann();}
+$('day-note').addEventListener('input',e=>{day().note=e.target.value;save();});
+
+/* breathing */
+let BR=null;
+function startBreath(){
+ $('breath').classList.add('on');
+ const phases=[['Breathe in…',true],['Hold',null],['Breathe out…',false],['Hold',null]];
+ let pi=0,total=120,c=$('bc'),t=$('bc-t'),ph=$('bphase');
+ function step(){
+  const [label,grow]=phases[pi%4];
+  t.textContent=label.replace('…','');ph.textContent=label;
+  if(grow===true)c.style.transform='scale(1)';
+  else if(grow===false)c.style.transform='scale(.7)';
+  pi++;
+ }
+ step();
+ BR={iv:setInterval(()=>{total-=4;$('br-left').textContent=Math.max(0,total)+'s left';if(total<=0){stopBreath();toast('2 minutes of calm. 🌿');return;}step();},4000)};
+ $('br-left').textContent='120s left';
+}
+function stopBreath(){if(BR)clearInterval(BR.iv);BR=null;$('breath').classList.remove('on');}
+
+/* ================= SAFAR ================= */
+let calOff=0;
+function calShift(n){calOff+=n;renderSafar();}
+function renderSafar(){
+ const base=new Date();base.setMonth(base.getMonth()+calOff);
+ const y=base.getFullYear(),m=base.getMonth();
+ $('cal-title').textContent=base.toLocaleString('en',{month:'long',year:'numeric'});
+ const first=new Date(y,m,1),days=new Date(y,m+1,0).getDate();
+ let html=['M','T','W','T','F','S','S'].map(h=>'<div class="d h">'+h+'</div>').join('');
+ const pad=(first.getDay()+6)%7;
+ for(let i=0;i<pad;i++)html+='<div></div>';
+ for(let dd=1;dd<=days;dd++){
+  const k=y+'-'+String(m+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
+  const a=activeDay(k);
+  html+='<div class="d'+(a?(a==='spark'?' b':' a'):'')+'">'+dd+'</div>';
+ }
+ $('cal').innerHTML=html;
+ $('st-total').textContent=Object.keys(S.days).filter(k=>S.days[k].act).length;
+ $('st-best').textContent=bestChain();
+ $('st-hikes').textContent=Object.values(S.days).reduce((s,d)=>s+(d.km||0),0).toFixed(0);
+ /* weight chart */
+ const ms=S.metrics.slice(-12);
+ let svg='';
+ if(ms.length>=2){
+  const ws=ms.map(m2=>m2.w).filter(Boolean);
+  const min=Math.min(...ws)-.5,max=Math.max(...ws)+.5,W=320,H=90;
+  const pts=ms.map((m2,i)=>((i/(ms.length-1))*(W-20)+10)+','+(H-10-((m2.w-min)/(max-min))*(H-25))).join(' ');
+  svg='<svg class="chart" viewBox="0 0 '+W+' '+H+'"><polyline points="'+pts+'" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linecap="round"/>'+
+   ms.map((m2,i)=>{const x=(i/(ms.length-1))*(W-20)+10,yv=H-10-((m2.w-min)/(max-min))*(H-25);return '<circle cx="'+x+'" cy="'+yv+'" r="3" fill="var(--acc)"/><text x="'+x+'" y="'+(yv-7)+'" font-size="9" fill="var(--ink2)" text-anchor="middle">'+m2.w+'</text>';}).join('')+'</svg>';
+ } else svg='<p class="muted small" style="margin-top:8px">Log weight each Sunday — the trend line appears after 2 entries. The trend matters; single days don\'t.</p>';
+ $('w-chart').innerHTML=svg;
+ /* levels */
+ const names={push:'Pushup',squat:'Squat',plank:'Plank',lunge:'Lunge',cardio:'Cardio'};
+ $('levels-list').innerHTML=Object.keys(names).map(k=>{
+  const arr=k==='cardio'?LV.cardio:LV[k];const cur=k==='cardio'?('Stage '+(S.levels[k]+1)):arr[Math.min(S.levels[k],arr.length-1)].n;
+  return '<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow" style="font-size:14px">'+names[k]+'</span><span class="pill on" style="font-size:12px">'+cur+'</span></div>';}).join('');
+}
+function logMetric(){
+ const w=parseFloat($('m-w').value),waist=parseFloat($('m-waist').value);
+ if(!w&&!waist){toast('Enter weight or waist first');return;}
+ S.metrics=S.metrics.filter(m=>m.d!==tk());
+ S.metrics.push({d:tk(),w:w||null,waist:waist||null});
+ S.metrics.sort((a,b)=>a.d<b.d?-1:1);
+ save();$('m-w').value='';$('m-waist').value='';toast('Saved. Watch the trend, not the day. 📉');renderSafar();
+}
+
+/* ================= BACKUP ================= */
+function exportData(){
+ const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sehat-backup-'+tk()+'.json';a.click();
+}
+function importData(inp){
+ const f=inp.files[0];if(!f)return;
+ const r=new FileReader();
+ r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.days)throw 0;S=Object.assign(blank(),d);save();render();toast('Imported ✓');}catch(e){toast('Invalid file');}};
+ r.readAsText(f);
+}
+
+/* ================= SOUND ================= */
+let AC=null;
+function beep(on){
+ if(!on)return;
+ try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+ const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+ o.frequency.value=880;g.gain.setValueAtTime(.12,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.18);
+ o.start();o.stop(AC.currentTime+.2);}catch(e){}
+}
+
+/* ================= NAV ================= */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+ document.getElementById('pg-'+b.dataset.pg).classList.add('on');
+ window.scrollTo(0,0);
+});
+
+render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
