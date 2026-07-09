@@ -135,6 +135,11 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
 @keyframes swB{0%,49%{opacity:0}50%,100%{opacity:1}}
 #how-steps li{font-size:15px;line-height:1.75;margin-bottom:6px}
 .howbtn{margin:14px auto 0;display:block;padding:8px 16px;border-radius:999px;background:var(--card2);color:var(--acc);font-weight:700;font-size:13px}
+#pl-info{margin:12px auto 0;max-width:340px;text-align:left}
+.pi{font-size:13px;color:var(--ink2);line-height:1.55;margin-top:5px}
+.pi.br{color:var(--acc);font-weight:600}
+.pi.no{color:#b3593a}
+.ov-mid{overflow-y:auto;-webkit-overflow-scrolling:touch}
 .libgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .libgrid button{background:var(--card2);border-radius:12px;padding:10px 8px;font-size:13px;font-weight:600;color:var(--ink)}
 </style>
@@ -259,6 +264,8 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
       <div class="stat"><div class="n" id="st-total">0</div><div class="l">total days<br>moved</div></div>
       <div class="stat"><div class="n" id="st-best">0</div><div class="l">best<br>chain</div></div>
       <div class="stat"><div class="n" id="st-hikes">0</div><div class="l">hike km<br>total</div></div>
+      <div class="stat"><div class="n" id="st-mins">0</div><div class="l">active min<br>this month</div></div>
+      <div class="stat"><div class="n" id="st-kcal">0</div><div class="l">~kcal burned<br>this month</div></div>
     </div>
   </div>
   <div class="card">
@@ -287,9 +294,11 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
       <ul style="margin-top:6px">
         <li>Open the <b>Shortcuts</b> app → tap <b>+</b></li>
         <li>Rename it exactly: <b>Sehat Log</b></li>
+        <li>Add action → search <b>"Get Numbers from Input"</b> → set its input to <b>Shortcut Input</b>. <i>(Sehat sends the minutes as text — this converts it to a number. Skipping this step causes the "There was a problem" error.)</i></li>
         <li>Add action → search <b>"Log Workout"</b></li>
         <li>Set Type: <b>Functional Strength Training</b></li>
-        <li>Tap Duration → select variable → <b>Shortcut Input</b> (minutes)</li>
+        <li>Tap Duration → select variable → <b>Numbers</b> (from the step above), unit: minutes</li>
+        <li>Make sure <b>"Show When Run" is OFF</b> on the Log Workout action (tap the arrow on it)</li>
         <li>Done. First run will ask for Health permission — allow it.</li>
       </ul>
     </details>
@@ -319,11 +328,16 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
     <div id="lib"></div>
   </div>
   <div class="card">
-    <h3>🔊 Sounds</h3>
+    <h3>🔊 Sounds & voice</h3>
     <label style="display:flex;align-items:center;gap:10px;margin-top:6px">
       <input type="checkbox" id="snd-tgl" onchange="S.sound=this.checked;save();if(this.checked)sfx.log();">
       <span class="muted">Gentle chimes, ticks and breathing tones — no music, no noise</span>
     </label>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      <input type="checkbox" id="voice-tgl" onchange="S.voice=this.checked;save();if(this.checked)speak('Voice coach on.');">
+      <span class="muted">🗣 Voice coach — speaks each move, its cues, and when to switch sides</span>
+    </label>
+    <p class="muted small" style="margin-top:8px">iPhone note: the silent switch on the side of the phone mutes all web audio. Flip it to ring mode during workouts.</p>
   </div>
   <div class="card">
     <h3>Backup</h3>
@@ -348,9 +362,10 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
     <div class="ov-target" id="pl-target"></div>
     <div class="ov-cue" id="pl-cue"></div>
     <button class="howbtn" id="pl-how" onclick="showHowCurrent()">🎬 How to do it</button>
+    <div id="pl-info"></div>
     <div class="ov-next" id="pl-next"></div>
   </div>
-  <button class="btn primary ov-btn" id="pl-btn" onclick="playerNext()">Done →</button>
+  <button class="btn primary ov-btn" id="pl-btn" onclick="playerBtn()">Done →</button>
 </div>
 
 <!-- ============ HOW-TO ============ -->
@@ -369,6 +384,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
 <div class="overlay" id="feel">
   <div class="ov-mid">
     <div class="ov-name">Done. 🎉</div>
+    <div class="ov-target" id="feel-stats" style="font-size:26px"></div>
     <div class="ov-cue" id="feel-msg">That's a link in the chain. How did it feel?</div>
     <div class="feelbtns">
       <button class="btn ghost" onclick="finishSession('easy')">😌 Easy</button>
@@ -424,21 +440,21 @@ const WARM=[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up
  {n:'Arm Circles + Shoulder Rolls',t:30,c:'Undo the desk',ph:'Warm-up'},
  {n:'Hip Circles',t:30,c:'Big slow circles, both ways',ph:'Warm-up'}];
 const COOL=[{n:"Child's Pose",t:30,c:'Sink the hips back, breathe into the lower back',ph:'Cooldown'},
- {n:'Knee to Chest',t:40,c:'20 sec each side, lying down',ph:'Cooldown'},
- {n:'Figure-4 Stretch',t:40,c:'Ankle over knee, 20 sec each side',ph:'Cooldown'},
- {n:'Doorway Chest Stretch',t:30,c:'Open the chest — reverse of hunching',ph:'Cooldown'}];
+ {n:'Knee to Chest',t:40,c:'Lying down — chime tells you when to switch legs',ph:'Cooldown',side:1},
+ {n:'Figure-4 Stretch',t:40,c:'Ankle over knee — switch at the chime',ph:'Cooldown',side:1},
+ {n:'Doorway Chest Stretch',t:30,c:'Open the chest — switch arms at the chime',ph:'Cooldown',side:1}];
 const DESK=[{n:'Stand + Reach Up',t:20,c:'Stand tall, arms overhead, stretch long',ph:'Desk reset'},
  {n:'Neck Rolls',t:20,c:'Slow half-circles, chin to chest',ph:'Desk reset'},
  {n:'Standing Cat–Cow',t:20,c:'Hands on knees, round then arch',ph:'Desk reset'},
  {n:'Doorway Chest Opener',t:20,c:'Squeeze shoulder blades',ph:'Desk reset'},
- {n:'Hip Flexor Stretch',t:30,c:'15 sec each side — sitting shortens these',ph:'Desk reset'},
+ {n:'Hip Flexor Stretch',t:30,c:'Switch sides at the chime — sitting shortens these',ph:'Desk reset',side:1},
  {n:'10 Chair Squats',t:'10 reps',c:'And you\'re done. Back to work lighter.',ph:'Desk reset'}];
 
 const SESS={
  A:{name:'Session A — Push & Core',desc:'Chest, arms, and the deep core that flattens the belly and protects the back.',
     build(lv){const coreSlot=new Date().getDate()%2
       ?ex(LV.plank[lv.plank])
-      :{n:'Side Plank',t:'20 sec / side',c:'Knees down is fine — this is the love-handle move'};
+      :{n:'Side Plank',t:40,side:1,c:'Knees down is fine — the love-handle move. Switch at the chime.'};
      return [ex(LV.push[lv.push]),{n:'Glute Bridge',t:'12 reps',c:'Squeeze at the top for 1 sec'},{n:'Dead Bug',t:'8 / side',c:'Lower back pressed flat to the floor'},coreSlot];}},
  B:{name:'Session B — Legs & Back',desc:'The biggest muscles = the biggest calorie burn. Bird dogs rebuild your lower back.',
     build(lv){const legSlot=new Date().getDate()%2
@@ -595,10 +611,20 @@ function buildSteps(kind,tier){
  steps=steps.concat(tier==='lite'?COOL.slice(0,2):COOL);
  return steps;
 }
+function stepInfo(s){
+ const k=ALIAS[s.n];if(!k||s.rest)return '';
+ const i=INFO[k];let h='';
+ if(BREATHE[k])h+='<div class="pi br">🫁 '+BREATHE[k]+'</div>';
+ h+=i.s.map(x=>'<div class="pi">✓ '+x+'</div>').join('');
+ if(i.a)h+='<div class="pi no">✗ '+i.a+'</div>';
+ return h;
+}
 function startSession(kind,tier){
  tier=tier||'full';
- P={steps:buildSteps(kind,tier),idx:-1,kind,tier};
+ P={steps:buildSteps(kind,tier),idx:-1,kind,tier,t0:Date.now()};
  actx(); // unlock audio inside the tap gesture (iOS requirement)
+ if(S.voice!==false&&window.speechSynthesis){try{speechSynthesis.cancel();speechSynthesis.getVoices();}catch(e){}}
+ reqWake();
  document.getElementById('player').classList.add('on');
  const d=document.getElementById('pl-dots');d.innerHTML=P.steps.map(()=>'<div class="dot"></div>').join('');
  playerNext();
@@ -609,37 +635,99 @@ function playerNext(){
  P.idx++;
  if(P.idx>=P.steps.length){return endSession();}
  const s=P.steps[P.idx];
- if(P.idx>0){s.rest?sfx.rest():sfx.go();}
  document.querySelectorAll('#pl-dots .dot').forEach((el,i)=>el.classList.toggle('done',i<=P.idx));
  document.getElementById('pl-count').textContent=(P.idx+1)+'/'+P.steps.length;
  document.getElementById('pl-phase').textContent=s.ph||'';
  document.getElementById('pl-name').textContent=s.n;
  document.getElementById('pl-cue').textContent=s.c||'';
+ document.getElementById('pl-info').innerHTML=stepInfo(s);
  const nx=P.steps[P.idx+1];
  document.getElementById('pl-next').textContent=nx?('Next: '+nx.n):'Last one — finish strong';
  document.getElementById('pl-how').style.display=(!s.rest&&ALIAS[s.n])?'':'none';
  const tgt=document.getElementById('pl-target'),btn=document.getElementById('pl-btn');
- if(typeof s.t==='number'){
-  P.left=s.t;tgt.textContent=P.left+'s';btn.textContent='Skip →';startTick();
- }else{P.left=null;tgt.textContent=s.t;btn.textContent='Done →';}
+ P.phase=null;P.switched=false;
+ if(typeof s.t==='number'&&!s.rest){
+  /* every timed exercise starts with 5s to get into position */
+  P.phase='prep';P.left=5;
+  tgt.textContent='Get ready · 5';btn.textContent='Start now →';
+  if(P.idx>0)sfx.rest();
+  speak('Get into position. '+s.n+'.');
+  startTick();
+ }else if(typeof s.t==='number'){
+  P.phase='rest';P.left=s.t;tgt.textContent=P.left+'s';btn.textContent='Skip →';
+  sfx.rest();speak('Rest.');
+  startTick();
+ }else{
+  P.left=null;tgt.textContent=s.t;btn.textContent='Done →';
+  if(P.idx>0)sfx.go();
+  const k=ALIAS[s.n];
+  speak(s.n+'. '+(s.c||'')+(k&&BREATHE[k]?' '+BREATHE[k].replace(/ · /g,', '):''));
+ }
+}
+function beginWork(){
+ const s=P.steps[P.idx];
+ P.phase='work';P.left=s.t;
+ document.getElementById('pl-target').textContent=P.left+'s';
+ document.getElementById('pl-btn').textContent='Skip →';
+ sfx.go();
+ const k=ALIAS[s.n];
+ speak('Go. '+(s.c?s.c+'. ':'')+(k&&BREATHE[k]?BREATHE[k].replace(/ · /g,', '):''));
+ startTick();
+}
+function playerBtn(){
+ if(P&&P.phase==='prep'){clearInterval(P.timer);beginWork();return;}
+ playerNext();
 }
 function startTick(){
  if(!P||P.left==null)return;
  clearInterval(P.timer);
- P.timer=setInterval(()=>{P.left--;document.getElementById('pl-target').textContent=P.left+'s';if(P.left>=1&&P.left<=3)sfx.tick();if(P.left<=0)playerNext();},1000);
+ P.timer=setInterval(()=>{
+  if(!P)return;
+  P.left--;
+  const s=P.steps[P.idx],tgt=document.getElementById('pl-target');
+  if(P.phase==='prep'){
+   tgt.textContent='Get ready · '+Math.max(0,P.left);
+   if(P.left>=1&&P.left<=3)sfx.tick();
+   if(P.left<=0){clearInterval(P.timer);beginWork();}
+   return;
+  }
+  tgt.textContent=P.left+'s';
+  if(s.side&&P.phase==='work'&&!P.switched){
+   const half=Math.floor(s.t/2);
+   if(P.left>half&&P.left<=half+3)sfx.tick();       /* heads-up: switch coming */
+   if(P.left===half){
+    P.switched=true;sfx.side();speak('Switch sides.');
+    document.getElementById('pl-cue').textContent='🔄 Switch sides — second half';
+   }
+  }
+  if(P.left>=1&&P.left<=3)sfx.tick();
+  if(P.left<=0)playerNext();
+ },1000);
 }
 function quitSession(){
  clearInterval(P&&P.timer);
+ if(window.speechSynthesis){try{speechSynthesis.cancel();}catch(e){}}
  const enough=P&&P.idx>=Math.min(5,P.steps.length-1);
  if(P&&P.kind!=='desk'&&enough){endSession();return;}
  if(P&&P.kind==='desk'&&P.idx>=2){S.deskTotal++;save();}
+ releaseWake();
  P=null;document.getElementById('player').classList.remove('on');render();
+}
+function kcalFor(mins,met){
+ const kg=(S.metrics.length?S.metrics[S.metrics.length-1].w:null)||70;
+ return Math.round(met*3.5*kg/200*mins);
 }
 function endSession(){
  clearInterval(P.timer);
+ releaseWake();
  document.getElementById('player').classList.remove('on');
  if(P.kind==='desk'){S.deskTotal++;save();P=null;sfx.log();toast('Desk reset done. Back feels that. 🌿');render();return;}
+ const mins=Math.max(1,Math.round((Date.now()-P.t0)/60000));
+ P.elapsed=mins;
+ P.kcal=kcalFor(mins,P.tier==='spark'?3.5:P.tier==='lite'?4.5:5);
+ document.getElementById('feel-stats').textContent='⏱ '+mins+' min · 🔥 ~'+P.kcal+' kcal';
  sfx.finish();
+ speak('Session complete. '+mins+' minutes, about '+P.kcal+' calories. Well done.');
  document.getElementById('feel').classList.add('on');
 }
 function finishSession(feel){
@@ -647,6 +735,8 @@ function finishSession(feel){
  const d=day();
  d.act=P.tier==='spark'?'spark':(P.tier==='lite'?'lite':'full');
  d.session=P.kind;d.feel=feel;
+ d.mins=(d.mins||0)+(P.elapsed||0);
+ d.kcal=(d.kcal||0)+(P.kcal||0);
  if(P.tier!=='spark'){S.lastStrength=P.kind;S.lastStrengthDate=tk();}
  /* auto level-up: easy twice in a row on a full session */
  if(feel==='easy'&&P.tier==='full'){
@@ -666,9 +756,13 @@ function finishSession(feel){
 }
 
 /* ================= LOG WALK / HIKE ================= */
-function logWalk(){const d=day();if(!d.act)d.act='walk';d.walk=(d.walk||0)+15;save();sfx.log();toast('Walk logged. Movement counts. 🚶');render();}
+function logWalk(){const d=day();if(!d.act)d.act='walk';d.walk=(d.walk||0)+15;
+ d.mins=(d.mins||0)+15;d.kcal=(d.kcal||0)+kcalFor(15,3.5);
+ save();sfx.log();toast('Walk logged. Movement counts. 🚶');render();}
 function logHike(){const km=parseFloat(document.getElementById('hike-km').value)||0;if(!km){toast('Enter the km first');return;}
- const d=day();d.act='hike';d.km=km;save();sfx.finish();toast('🏔️ '+km+' km hike logged. Beast.');render();}
+ const d=day();d.act='hike';d.km=km;
+ const mins=Math.round(km*12);d.mins=(d.mins||0)+mins;d.kcal=(d.kcal||0)+kcalFor(mins,6.5);
+ save();sfx.finish();toast('🏔️ '+km+' km hike logged. Beast.');render();}
 
 /* ================= CHAIN MATH ================= */
 function activeDay(k){const d=S.days[k];return d&&d.act?d.act:null;}
@@ -746,6 +840,7 @@ function renderToday(){
   const names={full:'Full session',lite:'Lite session',spark:'Spark',walk:'Walk',hike:'Hike'};
   card.innerHTML='<div class="name">✅ '+(names[d.act]||'Done')+(d.session?' — '+d.session:'')+'</div>'+
    '<div class="desc">Logged for today. Rest, walk, or stack a bonus — all optional.</div>'+
+   (d.mins?'<div class="muted small" style="margin-top:6px">⏱ '+d.mins+' min · 🔥 ~'+(d.kcal||0)+' kcal today</div>':'')+
    (d.steps?'<div class="muted small" style="margin-top:6px">👟 '+d.steps.toLocaleString()+' steps (from Health)</div>':'')+
    '<div class="tier2" style="margin-top:12px"><button class="btn ghost" onclick="logWalk()">+ 15 min walk</button>'+
    '<button class="btn ghost" onclick="startSession(\'desk\')">Desk reset</button></div>'+
@@ -824,6 +919,7 @@ $('day-note').addEventListener('input',e=>{day().note=e.target.value;save();});
 let BR=null;
 function startBreath(){
  actx(); // unlock audio inside the tap gesture (iOS requirement)
+ reqWake();
  $('breath').classList.add('on');
  const phases=[['Breathe in…',true],['Hold',null],['Breathe out…',false],['Hold',null]];
  let pi=0,total=120,c=$('bc'),t=$('bc-t'),ph=$('bphase');
@@ -838,7 +934,7 @@ function startBreath(){
  BR={iv:setInterval(()=>{total-=4;$('br-left').textContent=Math.max(0,total)+'s left';if(total<=0){stopBreath();toast('2 minutes of calm. 🌿');return;}step();},4000)};
  $('br-left').textContent='120s left';
 }
-function stopBreath(){if(BR)clearInterval(BR.iv);BR=null;$('breath').classList.remove('on');}
+function stopBreath(){if(BR)clearInterval(BR.iv);BR=null;releaseWake();$('breath').classList.remove('on');}
 
 /* ================= SAFAR ================= */
 let calOff=0;
@@ -860,6 +956,9 @@ function renderSafar(){
  $('st-total').textContent=Object.keys(S.days).filter(k=>S.days[k].act).length;
  $('st-best').textContent=bestChain();
  $('st-hikes').textContent=Object.values(S.days).reduce((s,d)=>s+(d.km||0),0).toFixed(0);
+ const mk=tk().slice(0,7);let mm=0,kc=0;
+ Object.keys(S.days).forEach(k=>{if(k.slice(0,7)===mk){mm+=S.days[k].mins||0;kc+=S.days[k].kcal||0;}});
+ $('st-mins').textContent=mm;$('st-kcal').textContent=kc;
  /* weight chart */
  const ms=S.metrics.slice(-12);
  let svg='';
@@ -893,8 +992,8 @@ function runShortcut(name,text){
 function sendHealth(){
  const d=day();
  if(!d.act){toast('Log a session first');return;}
- const mins=d.act==='full'?15:d.act==='lite'?5:d.act==='spark'?2:
-  d.act==='hike'?Math.round((d.km||4)*12):(d.walk||15);
+ const mins=d.mins||(d.act==='full'?15:d.act==='lite'?5:d.act==='spark'?2:
+  d.act==='hike'?Math.round((d.km||4)*12):(d.walk||15));
  d.hkSent=true;save();renderToday();
  runShortcut('Sehat Log',String(mins));
 }
@@ -973,17 +1072,74 @@ function breathTone(f){
  o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+3.8);
 }
 const sfx={
- tick(){tone(880,.08,0,.05);},                                    // last 3 seconds of a countdown
- go(){tone(587,.12,0,.11);tone(880,.14,.09,.09);},                // next exercise
- rest(){tone(392,.35,0,.09);},                                    // rest begins — low & calm
- finish(){[523,659,784,1047].forEach((f,i)=>tone(f,.3,i*.13,.13));}, // session complete
- levelup(){[523,659,784,880,1047].forEach((f,i)=>tone(f,.22,i*.09,.13));},
- log(){tone(587,.15,0,.11);tone(784,.3,.12,.11);},                // something good logged
- pop(){tone(700,.06,0,.06);},                                     // small tap feedback
- drip(){tone(900,.06,0,.07);tone(1250,.09,.07,.06);},             // water glass
+ tick(){tone(880,.1,0,.16);},                                     // last 3 seconds of a countdown
+ go(){tone(587,.14,0,.16);tone(880,.18,.1,.14);},                 // next exercise
+ rest(){tone(392,.4,0,.13);},                                     // rest begins — low & calm
+ finish(){[523,659,784,1047].forEach((f,i)=>tone(f,.4,i*.15,.2));}, // session complete
+ levelup(){[523,659,784,880,1047].forEach((f,i)=>tone(f,.25,i*.1,.18));},
+ side(){tone(660,.16,0,.18);tone(660,.16,.22,.18);},              // switch sides — double beep
+ log(){tone(587,.15,0,.13);tone(784,.3,.12,.13);},                // something good logged
+ pop(){tone(700,.06,0,.07);},                                     // small tap feedback
+ drip(){tone(900,.06,0,.08);tone(1250,.09,.07,.07);},             // water glass
  breathIn(){breathTone(392);},
  breathOut(){breathTone(294);}
 };
+/* keep the audio context alive: iOS suspends it aggressively; re-arm on every tap + on return to the app */
+document.addEventListener('pointerdown',()=>{if(S.sound!==false)actx();},true);
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden){if(S.sound!==false)actx();if(P||BR)reqWake();}
+});
+
+/* ================= VOICE COACH (speechSynthesis — on-device) ================= */
+function speak(txt){
+ if(S.voice===false||!window.speechSynthesis||!txt)return;
+ try{
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(txt);
+  u.rate=1;u.pitch=1;u.lang='en-US';
+  speechSynthesis.speak(u);
+ }catch(e){}
+}
+/* breathing technique per move — shown on screen and spoken */
+const BREATHE={
+ pushwall:'Inhale as you lean in · exhale as you push away',
+ pushincline:'Inhale down · exhale as you push up',
+ pushknee:'Inhale down · exhale as you push up',
+ pushfull:'Inhale down · exhale as you push up',
+ squat:'Inhale on the way down · exhale as you stand',
+ chairsquat:'Inhale sitting back · exhale as you stand',
+ plank:'Slow steady breaths — never hold your breath',
+ sideplank:'Slow steady breaths — never hold your breath',
+ deadbug:'Exhale slowly as the arm and leg lower',
+ birddog:'Exhale as you extend · inhale as you return',
+ bridge:'Exhale as the hips lift · inhale as they lower',
+ lunge:'Inhale stepping back · exhale as you push up',
+ superman:'Exhale as you lift · inhale as you lower',
+ calf:'Easy steady breathing throughout',
+ march:'Find a rhythm: in through the nose, out through the mouth',
+ jacks:'Steady rhythm — don\'t hold your breath',
+ box:'Sharp exhale with every punch',
+ climber:'Exhale as each knee drives in',
+ catcow:'Inhale as the belly drops · exhale as you round up',
+ childpose:'Long slow breaths into the lower back',
+ kneechest:'Sink a little deeper with every exhale',
+ fig4:'Sink a little deeper with every exhale',
+ chest:'Slow breaths — open a little more each exhale',
+ reach:'Inhale as you reach taller',
+ neck:'Slow, easy breathing',
+ hipcircle:'Easy breathing, loose body',
+ armcircle:'Easy breathing, shoulders relaxed',
+ hipflexor:'Exhale as the hips ease forward'
+};
+
+/* ================= WAKE LOCK (screen stays on during sessions) ================= */
+let WL=null;
+async function reqWake(){
+ try{if('wakeLock' in navigator){WL=await navigator.wakeLock.request('screen');}}catch(e){}
+}
+function releaseWake(){
+ try{if(WL){WL.release();WL=null;}}catch(e){}
+}
 
 /* ================= NAV ================= */
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
@@ -996,6 +1152,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 render();
 renderLib();
 document.getElementById('snd-tgl').checked=S.sound!==false;
+document.getElementById('voice-tgl').checked=S.voice!==false;
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
 </script>
 </body>
