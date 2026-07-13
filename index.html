@@ -437,14 +437,14 @@ const LV={
 };
 const WARM=[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up'},
  {n:'Cat–Cow',t:40,c:'On all fours. Slow. Your lower back loves this one.',ph:'Warm-up'},
- {n:'Arm Circles + Shoulder Rolls',t:30,c:'Undo the desk',ph:'Warm-up'},
- {n:'Hip Circles',t:30,c:'Big slow circles, both ways',ph:'Warm-up'}];
+ {n:'Arm Circles + Shoulder Rolls',t:30,c:'Undo the desk — reverse at the chime',ph:'Warm-up',side:1,dir:1},
+ {n:'Hip Circles',t:30,c:'Big slow circles — reverse at the chime',ph:'Warm-up',side:1,dir:1}];
 const COOL=[{n:"Child's Pose",t:30,c:'Sink the hips back, breathe into the lower back',ph:'Cooldown'},
  {n:'Knee to Chest',t:40,c:'Lying down — chime tells you when to switch legs',ph:'Cooldown',side:1},
  {n:'Figure-4 Stretch',t:40,c:'Ankle over knee — switch at the chime',ph:'Cooldown',side:1},
  {n:'Doorway Chest Stretch',t:30,c:'Open the chest — switch arms at the chime',ph:'Cooldown',side:1}];
 const DESK=[{n:'Stand + Reach Up',t:20,c:'Stand tall, arms overhead, stretch long',ph:'Desk reset'},
- {n:'Neck Rolls',t:20,c:'Slow half-circles, chin to chest',ph:'Desk reset'},
+ {n:'Neck Rolls',t:20,c:'Slow half-circles — reverse at the chime',ph:'Desk reset',side:1,dir:1},
  {n:'Standing Cat–Cow',t:20,c:'Hands on knees, round then arch',ph:'Desk reset'},
  {n:'Doorway Chest Opener',t:20,c:'Squeeze shoulder blades',ph:'Desk reset'},
  {n:'Hip Flexor Stretch',t:30,c:'Switch sides at the chime — sitting shortens these',ph:'Desk reset',side:1},
@@ -700,6 +700,10 @@ function buildSteps(kind,tier){
  steps=steps.concat(tier==='lite'?COOL.slice(0,2):COOL);
  return steps;
 }
+function speakTarget(t){
+ if(typeof t==='number')return t+' seconds';
+ return String(t).replace(/–/g,' to ').replace(/\s*\/\s*side/i,' each side');
+}
 function stepInfo(s){
  const k=ALIAS[s.n];if(!k||s.rest)return '';
  const i=INFO[k];let h='';
@@ -740,7 +744,7 @@ function playerNext(){
   P.phase='prep';P.left=5;
   tgt.textContent='Get ready · 5';btn.textContent='Start now →';
   if(P.idx>0)sfx.rest();
-  speak('Get into position. '+s.n+'.');
+  speak('Get into position. '+s.n+'. '+speakTarget(s.t)+'.');
   startTick();
  }else if(typeof s.t==='number'){
   P.phase='rest';P.left=s.t;tgt.textContent=P.left+'s';btn.textContent='Skip →';
@@ -750,7 +754,7 @@ function playerNext(){
   P.left=null;tgt.textContent=s.t;btn.textContent='Done →';
   if(P.idx>0)sfx.go();
   const k=ALIAS[s.n];
-  speak(s.n+'. '+(s.c||'')+(k&&BREATHE[k]?' '+BREATHE[k].replace(/ · /g,', '):''));
+  speak(s.n+'. '+speakTarget(s.t)+'. '+(s.c||'')+(k&&BREATHE[k]?' '+BREATHE[k].replace(/ · /g,', '):''));
  }
 }
 function beginWork(){
@@ -785,8 +789,9 @@ function startTick(){
    const half=Math.floor(s.t/2);
    if(P.left>half&&P.left<=half+3)sfx.tick();       /* heads-up: switch coming */
    if(P.left===half){
-    P.switched=true;sfx.side();speak('Switch sides.');
-    document.getElementById('pl-cue').textContent='🔄 Switch sides — second half';
+    P.switched=true;sfx.side();
+    speak(s.dir?'Reverse direction.':'Switch sides.');
+    document.getElementById('pl-cue').textContent=s.dir?'🔄 Reverse — circle the other way':'🔄 Switch sides — second half';
    }
   }
   if(P.left>=1&&P.left<=3)sfx.tick();
