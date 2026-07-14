@@ -138,6 +138,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
 #pl-info{margin:12px auto 0;max-width:340px;text-align:left}
 .pi{font-size:13px;color:var(--ink2);line-height:1.55;margin-top:5px}
 .pi.br{color:var(--acc);font-weight:600}
+.pi.mu{color:#c9922f;font-weight:600}
 .pi.no{color:#b3593a}
 .ov-mid{overflow-y:auto;-webkit-overflow-scrolling:touch}
 .libgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
@@ -373,6 +374,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
   <div class="ov-top"><span class="muted small">Move guide</span><button class="x" onclick="closeHow()">Close ✕</button></div>
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <h2 id="how-title" style="font-size:24px;font-weight:800;margin-top:4px;letter-spacing:-.4px"></h2>
+    <p id="how-mus" style="font-size:13px;font-weight:600;color:#c9922f;margin-top:4px"></p>
     <div id="how-demo"></div>
     <ol id="how-steps" style="padding-left:22px;margin-top:12px"></ol>
     <p class="banner" id="how-avoid" style="display:none"></p>
@@ -658,6 +660,7 @@ function showHow(key){
  const info=INFO[key];if(!info)return;
  if(P&&P.timer){clearInterval(P.timer);P.paused=true;}
  document.getElementById('how-title').textContent=info.t;
+ document.getElementById('how-mus').textContent=MUSCLES[key]?'🎯 '+MUSCLES[key]:'';
  document.getElementById('how-demo').innerHTML=demoSvg(key);
  document.getElementById('how-steps').innerHTML=info.s.map(x=>'<li>'+x+'</li>').join('');
  const av=document.getElementById('how-avoid');
@@ -707,6 +710,7 @@ function speakTarget(t){
 function stepInfo(s){
  const k=ALIAS[s.n];if(!k||s.rest)return '';
  const i=INFO[k];let h='';
+ if(MUSCLES[k])h+='<div class="pi mu">🎯 '+MUSCLES[k]+'</div>';
  if(BREATHE[k])h+='<div class="pi br">🫁 '+BREATHE[k]+'</div>';
  h+=i.s.map(x=>'<div class="pi">✓ '+x+'</div>').join('');
  if(i.a)h+='<div class="pi no">✗ '+i.a+'</div>';
@@ -1199,6 +1203,49 @@ function speak(txt){
   speechSynthesis.speak(u);
  }catch(e){}
 }
+/* target muscles per move — shown in player + move guide */
+const MUSCLES={
+ pushwall:'Chest · front shoulders · triceps · core',
+ pushincline:'Chest · front shoulders · triceps · core',
+ pushknee:'Chest · front shoulders · triceps · core',
+ pushfull:'Chest · front shoulders · triceps · core',
+ pike:'Shoulders · upper chest · triceps',
+ chairdips:'Triceps · chest · front shoulders',
+ snowangel:'Upper back · rear shoulders · posture muscles',
+ squat:'Quads · glutes · hamstrings · core',
+ chairsquat:'Quads · glutes · hamstrings · core',
+ lunge:'Quads · glutes · balance & core',
+ stepups:'Quads · glutes · calves',
+ wallsit:'Quads (isometric hold) · glutes',
+ bridge:'Glutes · hamstrings · lower-back support',
+ bridgemarch:'Glutes · hamstrings · deep core',
+ calf:'Calves',
+ plank:'Deep core · shoulders · glutes',
+ sideplank:'Obliques (love handles) · deep core',
+ deadbug:'Deep core · hip flexors — back-safe belly work',
+ birddog:'Lower-back stabilizers · glutes · core',
+ superman:'Lower back · glutes · upper back',
+ beartaps:'Deep core · shoulders · quads',
+ heeltaps:'Obliques (love handles)',
+ inchworm:'Whole body — hamstrings · shoulders · core',
+ march:'Heart & lungs · hip flexors · calves',
+ jacks:'Heart & lungs · shoulders · calves',
+ box:'Heart & lungs · shoulders · obliques',
+ climber:'Heart & lungs · core · shoulders',
+ skater:'Heart & lungs · glutes · outer thighs',
+ buttkicks:'Heart & lungs · hamstrings',
+ kneeelbow:'Obliques · hip flexors · heart & lungs',
+ catcow:'Spine mobility · lower-back relief',
+ childpose:'Lower-back stretch · hips',
+ kneechest:'Lower-back stretch',
+ fig4:'Deep glutes (piriformis) · hips',
+ chest:'Chest & front-shoulder stretch',
+ reach:'Lats · spine decompression',
+ neck:'Neck release',
+ hipcircle:'Hip mobility',
+ armcircle:'Shoulder mobility',
+ hipflexor:'Hip-flexor stretch'
+};
 /* breathing technique per move — shown on screen and spoken */
 const BREATHE={
  pushwall:'Inhale as you lean in · exhale as you push away',
