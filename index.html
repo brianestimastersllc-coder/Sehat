@@ -450,7 +450,11 @@ const WARM={
  C:[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up'},
     {n:'Arm Circles + Shoulder Rolls',t:20,c:'Loosen up — reverse at the chime',ph:'Warm-up',side:1,dir:1},
     {n:'Hip Circles',t:20,c:'Loose hips before the pace — reverse at the chime',ph:'Warm-up',side:1,dir:1},
-    {n:'Butt Kicks',t:20,c:'Gentle pace — just raising the heart rate',ph:'Warm-up'}]
+    {n:'Butt Kicks',t:20,c:'Gentle pace — just raising the heart rate',ph:'Warm-up'}],
+ D:[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up'},
+    {n:'Cat–Cow',t:40,c:'On all fours. Slow. Warm the spine for everything.',ph:'Warm-up'},
+    {n:'Arm Circles + Shoulder Rolls',t:20,c:'Whole body ahead — reverse at the chime',ph:'Warm-up',side:1,dir:1},
+    {n:'Hip Circles',t:20,c:'And the hips too — reverse at the chime',ph:'Warm-up',side:1,dir:1}]
 };
 const COOL={
  A:[{n:'Doorway Chest Stretch',t:30,c:'You just worked the chest — now open it. Switch at the chime.',ph:'Cooldown',side:1},
@@ -461,7 +465,10 @@ const COOL={
     {n:'Knee to Chest',t:40,c:'Your lower back thanks you — switch at the chime',ph:'Cooldown',side:1}],
  C:[{n:'March in Place',t:30,c:'Slow it right down — let the heart settle',ph:'Cooldown'},
     {n:'Hip Flexor Stretch',t:30,c:'Hips worked hard — switch at the chime',ph:'Cooldown',side:1},
-    {n:"Child's Pose",t:30,c:'Breathe until the heartbeat goes quiet',ph:'Cooldown'}]
+    {n:"Child's Pose",t:30,c:'Breathe until the heartbeat goes quiet',ph:'Cooldown'}],
+ D:[{n:'Doorway Chest Stretch',t:30,c:'Open what the pushing closed — switch at the chime',ph:'Cooldown',side:1},
+    {n:'Figure-4 Stretch',t:40,c:'Release the glutes — switch at the chime',ph:'Cooldown',side:1},
+    {n:"Child's Pose",t:30,c:'Whole body worked — whole body lets go',ph:'Cooldown'}]
 };
 const DESK=[{n:'Stand + Reach Up',t:20,c:'Stand tall, arms overhead, stretch long',ph:'Desk reset'},
  {n:'Neck Rolls',t:20,c:'Slow half-circles — reverse at the chime',ph:'Desk reset',side:1,dir:1},
@@ -530,7 +537,19 @@ const SESS={
      let pool=POOL.cardioBase.slice();
      if(stage>=1)pool=pool.concat(POOL.cardioL1);
      if(stage>=2)pool=pool.concat(POOL.cardioL2);
-     return pickN(pool,4,rng(dseed()+2)).map(e=>({n:e.n,t:30,c:e.c}));}}
+     return pickN(pool,4,rng(dseed()+2)).map(e=>({n:e.n,t:30,c:e.c}));}},
+ D:{name:'Session D — Whole Body',desc:'One of everything — push, legs, core, and a 30-second stamina finisher. Shuffles daily. 🎲',
+    build(lv){const r=rng(dseed()+3);
+     const legs=pick1([ex(LV.squat[lv.squat]),ex(LV.lunge[Math.min(lv.lunge,LV.lunge.length-1)]),
+      {n:'Step-ups',t:'8 / side',c:'Stairs or a sturdy platform, drive through the heel'},
+      {n:'Wall Sit',t:30,c:'Back flat on the wall, thighs toward parallel'}],r);
+     const core=pick1(POOL.coreA.concat(POOL.backB),r);
+     const stage=Math.min(lv.cardio,2);
+     let cpool=POOL.cardioBase.slice();
+     if(stage>=1)cpool=cpool.concat(POOL.cardioL1);
+     if(stage>=2)cpool=cpool.concat(POOL.cardioL2);
+     const fin=pick1(cpool,r);
+     return [ex(LV.push[lv.push]),legs,core,{n:fin.n,t:30,c:fin.c}];}}
 };
 function ex(l){return {n:l.n,t:l.t,c:l.c||'',side:l.side};}
 
@@ -729,6 +748,12 @@ function speakMuscles(k){
  if(!k||!MUSCLES[k])return '';
  return ' Targets: '+MUSCLES[k].replace(/\s*·\s*/g,', ').replace(/\s*\(/g,', ').replace(/\)/g,'').replace(/&/g,'and')+'.';
 }
+/* say the muscle line only the first time a move appears in a session — round 2+ stays brief */
+function musOnce(s){
+ if(!P||P.saidMus.has(s.n))return '';
+ P.saidMus.add(s.n);
+ return speakMuscles(ALIAS[s.n]);
+}
 function stepInfo(s){
  const k=ALIAS[s.n];if(!k||s.rest)return '';
  const i=INFO[k];let h='';
@@ -740,7 +765,7 @@ function stepInfo(s){
 }
 function startSession(kind,tier){
  tier=tier||'full';
- P={steps:buildSteps(kind,tier),idx:-1,kind,tier,t0:Date.now()};
+ P={steps:buildSteps(kind,tier),idx:-1,kind,tier,t0:Date.now(),saidMus:new Set()};
  actx(); // unlock audio inside the tap gesture (iOS requirement)
  if(S.voice!==false&&window.speechSynthesis){try{speechSynthesis.cancel();speechSynthesis.getVoices();}catch(e){}}
  reqWake();
@@ -770,7 +795,7 @@ function playerNext(){
   P.phase='prep';P.left=5;
   tgt.textContent='Get ready · 5';btn.textContent='Start now →';
   if(P.idx>0)sfx.rest();
-  speak('Get into position. '+s.n+'. '+speakTarget(s.t)+'.'+speakMuscles(ALIAS[s.n]));
+  speak('Get into position. '+s.n+'. '+speakTarget(s.t)+'.'+musOnce(s));
   startTick();
  }else if(typeof s.t==='number'){
   P.phase='rest';P.left=s.t;tgt.textContent=P.left+'s';btn.textContent='Skip →';
@@ -780,7 +805,7 @@ function playerNext(){
   P.left=null;tgt.textContent=s.t;btn.textContent='Done →';
   if(P.idx>0)sfx.go();
   const k=ALIAS[s.n];
-  speak(s.n+'. '+speakTarget(s.t)+'.'+speakMuscles(k)+' '+(s.c||'')+(k&&BREATHE[k]?' '+BREATHE[k].replace(/ · /g,', '):''));
+  speak(s.n+'. '+speakTarget(s.t)+'.'+musOnce(s)+' '+(s.c||'')+(k&&BREATHE[k]?' '+BREATHE[k].replace(/ · /g,', '):''));
  }
 }
 function beginWork(){
@@ -863,7 +888,7 @@ function finishSession(feel){
   S.easy[P.kind]=(S.easy[P.kind]||0)+1;
   if(S.easy[P.kind]>=2){
    S.easy[P.kind]=0;
-   const keys=P.kind==='A'?['push','plank']:P.kind==='B'?['squat','lunge']:['cardio'];
+   const keys=P.kind==='A'?['push','plank']:P.kind==='B'?['squat','lunge']:P.kind==='D'?['push','squat']:['cardio'];
    let upped=[];
    keys.forEach(k=>{const max=(k==='cardio'?LV.cardio.length:LV[k].length)-1;if(S.levels[k]<max){S.levels[k]++;upped.push(k);}});
    if(upped.length){sfx.levelup();toast('⬆️ Level up! Next time gets a little stronger.');}
@@ -951,7 +976,7 @@ function renderChain(){
 }
 function nextStrength(){
  if(!S.lastStrength)return 'A';
- return {A:'B',B:'C',C:'A'}[S.lastStrength];
+ return {A:'B',B:'C',C:'D',D:'A'}[S.lastStrength]||'A';
 }
 function renderToday(){
  const d=day(),card=$('today-card'),dow=new Date().getDay();
