@@ -437,14 +437,32 @@ const LV={
   [{n:'High Knees',c:'Push the pace'},{n:'Shadow Boxing',c:'Fast hands, move your feet'},{n:'Jump-to-Squat (light)',c:'Small hop, soft landing'},{n:'Mountain Climbers (slow)',c:'Hips low, controlled'}]
  ]
 };
-const WARM=[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up'},
- {n:'Cat–Cow',t:40,c:'On all fours. Slow. Your lower back loves this one.',ph:'Warm-up'},
- {n:'Arm Circles + Shoulder Rolls',t:30,c:'Undo the desk — reverse at the chime',ph:'Warm-up',side:1,dir:1},
- {n:'Hip Circles',t:30,c:'Big slow circles — reverse at the chime',ph:'Warm-up',side:1,dir:1}];
-const COOL=[{n:"Child's Pose",t:30,c:'Sink the hips back, breathe into the lower back',ph:'Cooldown'},
- {n:'Knee to Chest',t:40,c:'Lying down — chime tells you when to switch legs',ph:'Cooldown',side:1},
- {n:'Figure-4 Stretch',t:40,c:'Ankle over knee — switch at the chime',ph:'Cooldown',side:1},
- {n:'Doorway Chest Stretch',t:30,c:'Open the chest — switch arms at the chime',ph:'Cooldown',side:1}];
+/* warmups rehearse what the session is about to load; cooldowns stretch what it just worked */
+const WARM={
+ A:[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up'},
+    {n:'Cat–Cow',t:40,c:'On all fours. Slow. Your lower back loves this one.',ph:'Warm-up'},
+    {n:'Arm Circles + Shoulder Rolls',t:30,c:'Wake the shoulders — push day ahead. Reverse at the chime.',ph:'Warm-up',side:1,dir:1},
+    {n:'Wall Pushups',t:20,c:'Easy ones — groove the pattern before the real sets',ph:'Warm-up'}],
+ B:[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up'},
+    {n:'Cat–Cow',t:40,c:'On all fours. Slow. Your lower back loves this one.',ph:'Warm-up'},
+    {n:'Hip Circles',t:30,c:'Open the hips — leg day ahead. Reverse at the chime.',ph:'Warm-up',side:1,dir:1},
+    {n:'Chair Squat Taps',t:20,c:'Light easy taps — just waking the legs',ph:'Warm-up'}],
+ C:[{n:'March in Place',t:40,c:'Easy pace, wake the body up',ph:'Warm-up'},
+    {n:'Arm Circles + Shoulder Rolls',t:20,c:'Loosen up — reverse at the chime',ph:'Warm-up',side:1,dir:1},
+    {n:'Hip Circles',t:20,c:'Loose hips before the pace — reverse at the chime',ph:'Warm-up',side:1,dir:1},
+    {n:'Butt Kicks',t:20,c:'Gentle pace — just raising the heart rate',ph:'Warm-up'}]
+};
+const COOL={
+ A:[{n:'Doorway Chest Stretch',t:30,c:'You just worked the chest — now open it. Switch at the chime.',ph:'Cooldown',side:1},
+    {n:'Stand + Reach Up',t:20,c:'Decompress — stretch as tall as you can',ph:'Cooldown'},
+    {n:"Child's Pose",t:30,c:'Let the core and lower back let go',ph:'Cooldown'}],
+ B:[{n:'Figure-4 Stretch',t:40,c:'The glutes just worked — release them. Switch at the chime.',ph:'Cooldown',side:1},
+    {n:'Hip Flexor Stretch',t:30,c:'Undo the sitting — switch at the chime',ph:'Cooldown',side:1},
+    {n:'Knee to Chest',t:40,c:'Your lower back thanks you — switch at the chime',ph:'Cooldown',side:1}],
+ C:[{n:'March in Place',t:30,c:'Slow it right down — let the heart settle',ph:'Cooldown'},
+    {n:'Hip Flexor Stretch',t:30,c:'Hips worked hard — switch at the chime',ph:'Cooldown',side:1},
+    {n:"Child's Pose",t:30,c:'Breathe until the heartbeat goes quiet',ph:'Cooldown'}]
+};
 const DESK=[{n:'Stand + Reach Up',t:20,c:'Stand tall, arms overhead, stretch long',ph:'Desk reset'},
  {n:'Neck Rolls',t:20,c:'Slow half-circles — reverse at the chime',ph:'Desk reset',side:1,dir:1},
  {n:'Standing Cat–Cow',t:20,c:'Hands on knees, round then arch',ph:'Desk reset'},
@@ -694,18 +712,22 @@ function buildSteps(kind,tier){
   return steps;
  }
  const rounds=tier==='lite'?1:3;
- steps=WARM.slice();
+ steps=WARM[kind].slice();
  for(let r=1;r<=rounds;r++){
   main.forEach((e,i)=>{steps.push(Object.assign({ph:'Round '+r+' of '+rounds},e));
    if(!(r===rounds&&i===main.length-1))steps.push({n:'Rest',t:kind==='C'?15:20,c:'Shake it out, breathe',ph:'Rest',rest:1});});
   if(r<rounds)steps.push({n:'Round done — rest',t:40,c:'Water sip. Next round in a moment.',ph:'Rest',rest:1});
  }
- steps=steps.concat(tier==='lite'?COOL.slice(0,2):COOL);
+ steps=steps.concat(tier==='lite'?COOL[kind].slice(0,2):COOL[kind]);
  return steps;
 }
 function speakTarget(t){
  if(typeof t==='number')return t+' seconds';
  return String(t).replace(/–/g,' to ').replace(/\s*\/\s*side/i,' each side');
+}
+function speakMuscles(k){
+ if(!k||!MUSCLES[k])return '';
+ return ' Targets: '+MUSCLES[k].replace(/\s*·\s*/g,', ').replace(/\s*\(/g,', ').replace(/\)/g,'').replace(/&/g,'and')+'.';
 }
 function stepInfo(s){
  const k=ALIAS[s.n];if(!k||s.rest)return '';
@@ -748,7 +770,7 @@ function playerNext(){
   P.phase='prep';P.left=5;
   tgt.textContent='Get ready · 5';btn.textContent='Start now →';
   if(P.idx>0)sfx.rest();
-  speak('Get into position. '+s.n+'. '+speakTarget(s.t)+'.');
+  speak('Get into position. '+s.n+'. '+speakTarget(s.t)+'.'+speakMuscles(ALIAS[s.n]));
   startTick();
  }else if(typeof s.t==='number'){
   P.phase='rest';P.left=s.t;tgt.textContent=P.left+'s';btn.textContent='Skip →';
@@ -758,7 +780,7 @@ function playerNext(){
   P.left=null;tgt.textContent=s.t;btn.textContent='Done →';
   if(P.idx>0)sfx.go();
   const k=ALIAS[s.n];
-  speak(s.n+'. '+speakTarget(s.t)+'. '+(s.c||'')+(k&&BREATHE[k]?' '+BREATHE[k].replace(/ · /g,', '):''));
+  speak(s.n+'. '+speakTarget(s.t)+'.'+speakMuscles(k)+' '+(s.c||'')+(k&&BREATHE[k]?' '+BREATHE[k].replace(/ · /g,', '):''));
  }
 }
 function beginWork(){
