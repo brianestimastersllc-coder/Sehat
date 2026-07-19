@@ -24,7 +24,9 @@
 html,body{height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);
   padding-bottom:calc(74px + env(safe-area-inset-bottom));overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
-.page{display:none;max-width:560px;margin:0 auto;padding:14px 16px 20px}
+.page{display:none;max-width:560px;margin:0 auto;padding:14px 16px calc(130px + env(safe-area-inset-bottom))}
+.lvbar{height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.lvfill{height:100%;background:var(--acc);border-radius:99px;transition:width .5s ease}
 .page.on{display:block}
 header.top{max-width:560px;margin:0 auto;padding:calc(10px + env(safe-area-inset-top)) 16px 2px;display:flex;justify-content:space-between;align-items:baseline}
 header.top h1{font-size:22px;font-weight:800;letter-spacing:-.3px}
@@ -260,6 +262,10 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
     <p class="muted small" style="margin-top:6px">Needs the one-time Shortcuts setup — see the App tab.</p>
   </div>
   <div class="card">
+    <h3>🧭 Where you stand</h3>
+    <div id="rank-box"></div>
+  </div>
+  <div class="card">
     <h3>Numbers</h3>
     <div class="statgrid">
       <div class="stat"><div class="n" id="st-total">0</div><div class="l">total days<br>moved</div></div>
@@ -284,8 +290,8 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
       <li><b>Every day has 3 sizes:</b> Full (~15 min), Lite (5 min), Spark (2 min). All three count.</li>
       <li><b>Never miss twice.</b> One missed day bends the chain (amber) — it doesn't break it. Two in a row and the chain rests; your comeback restarts it, and nothing else is lost.</li>
       <li><b>Week won = any 4 active days.</b></li>
-      <li><b>Rotation:</b> A (Push & Core) → B (Legs & Back) → C (Stamina), walks in between, Sunday hike.</li>
-      <li><b>Back pain:</b> no sit-ups, no crunches. Dead bugs, bird dogs, bridges and planks build the same core while healing the lower back.</li>
+      <li><b>Rotation:</b> A (Push & Core) → B (Legs & Back) → C (Stamina) → D (Whole Body), walks in between, Sunday hike.</li>
+      <li><b>Back-safe by design:</b> no sit-ups, ever — dead bugs, bird dogs, bridges and planks build a stronger core with zero spine cost, and Cat–Cow keeps the lower back happy.</li>
     </ul>
   </div>
   <div class="card guide">
@@ -378,6 +384,8 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
     <div id="how-demo"></div>
     <ol id="how-steps" style="padding-left:22px;margin-top:12px"></ol>
     <p class="banner" id="how-avoid" style="display:none"></p>
+    <a class="btn ghost" id="how-yt" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:12px;text-decoration:none">▶️ Watch a real video on YouTube</a>
+    <p class="muted small" style="text-align:center;margin-top:6px">Your session auto-pauses while you're away and resumes — chimes and all — when you're back.</p>
   </div>
   <button class="btn primary" onclick="closeHow()">Got it →</button>
 </div>
@@ -698,6 +706,7 @@ function showHow(key){
  if(P&&P.timer){clearInterval(P.timer);P.paused=true;}
  document.getElementById('how-title').textContent=info.t;
  document.getElementById('how-mus').textContent=MUSCLES[key]?'🎯 '+MUSCLES[key]:'';
+ document.getElementById('how-yt').href='https://www.youtube.com/results?search_query='+encodeURIComponent('how to do '+info.t+' exercise proper form');
  document.getElementById('how-demo').innerHTML=demoSvg(key);
  document.getElementById('how-steps').innerHTML=info.s.map(x=>'<li>'+x+'</li>').join('');
  const av=document.getElementById('how-avoid');
@@ -819,6 +828,13 @@ function beginWork(){
  startTick();
 }
 function playerBtn(){
+ if(P&&P.awaitResume){
+  P.awaitResume=false;
+  actx(); /* the tap is the gesture iOS needs to re-arm audio after an app switch */
+  document.getElementById('pl-target').textContent=(P.phase==='prep'?'Get ready · ':'')+P.left+(P.phase==='prep'?'':'s');
+  document.getElementById('pl-btn').textContent=P.phase==='prep'?'Start now →':'Skip →';
+  sfx.go();startTick();return;
+ }
  if(P&&P.phase==='prep'){clearInterval(P.timer);beginWork();return;}
  playerNext();
 }
@@ -1115,11 +1131,38 @@ function renderSafar(){
    ms.map((m2,i)=>{const x=(i/(ms.length-1))*(W-20)+10,yv=H-10-((m2.w-min)/(max-min))*(H-25);return '<circle cx="'+x+'" cy="'+yv+'" r="3" fill="var(--acc)"/><text x="'+x+'" y="'+(yv-7)+'" font-size="9" fill="var(--ink2)" text-anchor="middle">'+m2.w+'</text>';}).join('')+'</svg>';
  } else svg='<p class="muted small" style="margin-top:8px">Log weight each Sunday — the trend line appears after 2 entries. The trend matters; single days don\'t.</p>';
  $('w-chart').innerHTML=svg;
- /* levels */
+ /* levels as progress bars */
  const names={push:'Pushup',squat:'Squat',plank:'Plank',lunge:'Lunge',cardio:'Cardio'};
  $('levels-list').innerHTML=Object.keys(names).map(k=>{
-  const arr=k==='cardio'?LV.cardio:LV[k];const cur=k==='cardio'?('Stage '+(S.levels[k]+1)):arr[Math.min(S.levels[k],arr.length-1)].n;
-  return '<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line)"><span class="grow" style="font-size:14px">'+names[k]+'</span><span class="pill on" style="font-size:12px">'+cur+'</span></div>';}).join('');
+  const arr=k==='cardio'?LV.cardio:LV[k],max=arr.length,cur=Math.min(S.levels[k],max-1);
+  const label=k==='cardio'?('Stage '+(cur+1)):arr[cur].n;
+  const pct=Math.round(((cur+1)/max)*100);
+  return '<div style="padding:9px 0;border-bottom:1px solid var(--line)">'+
+   '<div class="row" style="margin-bottom:6px"><span class="grow" style="font-size:13px;font-weight:600">'+names[k]+'</span><span class="muted small">'+label+' · '+(cur+1)+' of '+max+'</span></div>'+
+   '<div class="lvbar"><div class="lvfill" style="width:'+pct+'%"></div></div></div>';}).join('');
+ renderRank();
+}
+const RANKS=[[0,'🌱 Nayi Shuruaat'],[5,'🔥 Ignition'],[15,'🧱 Foundation'],[30,'⚙️ Consistent'],[60,'💪 Strong'],[100,'🏔️ Mountain Ready'],[180,'🦁 Athlete'],[365,'👑 Lifestyle']];
+function renderRank(){
+ const total=Object.keys(S.days).filter(k=>S.days[k].act).length;
+ let ri=0;for(let i=0;i<RANKS.length;i++)if(total>=RANKS[i][0])ri=i;
+ const cur=RANKS[ri],nxt=RANKS[ri+1];
+ let h='<div style="font-size:22px;font-weight:800;letter-spacing:-.3px">'+cur[1]+'</div>';
+ if(nxt){
+  const pct=Math.min(100,Math.round((total-cur[0])/(nxt[0]-cur[0])*100));
+  h+='<div class="muted small" style="margin-top:4px">'+total+' days moved · '+(nxt[0]-total)+' more to '+nxt[1]+'</div>'+
+     '<div class="lvbar" style="margin-top:8px"><div class="lvfill" style="width:'+pct+'%"></div></div>';
+ }else h+='<div class="muted small" style="margin-top:4px">'+total+' days moved. Untouchable.</div>';
+ /* active minutes, last 3 months */
+ const now=new Date(),rows=[];let maxm=1;
+ for(let i=2;i>=0;i--){
+  const d0=new Date(now.getFullYear(),now.getMonth()-i,1),mk2=tk(d0).slice(0,7);
+  let mm=0;Object.keys(S.days).forEach(k2=>{if(k2.slice(0,7)===mk2)mm+=S.days[k2].mins||0;});
+  rows.push([d0.toLocaleString('en',{month:'short'}),mm]);maxm=Math.max(maxm,mm);
+ }
+ h+='<div style="margin-top:14px"><span class="muted small" style="font-weight:700">Active minutes by month</span>'+
+  rows.map(([l,v])=>'<div class="row" style="margin-top:6px;gap:8px"><span class="muted small" style="width:32px">'+l+'</span><div class="lvbar grow"><div class="lvfill" style="width:'+Math.round(v/maxm*100)+'%"></div></div><span class="muted small" style="width:58px;text-align:right">'+v+' min</span></div>').join('')+'</div>';
+ $('rank-box').innerHTML=h;
 }
 function logMetric(){
  const w=parseFloat($('m-w').value),waist=parseFloat($('m-waist').value);
@@ -1236,7 +1279,18 @@ const sfx={
 /* keep the audio context alive: iOS suspends it aggressively; re-arm on every tap + on return to the app */
 document.addEventListener('pointerdown',()=>{if(S.sound!==false)actx();},true);
 document.addEventListener('visibilitychange',()=>{
- if(!document.hidden){if(S.sound!==false)actx();if(P||BR)reqWake();}
+ if(document.hidden){
+  /* app switched away (e.g. YouTube form-check) — freeze the countdown so nothing is lost */
+  if(P&&P.timer&&P.left!=null&&!P.paused){clearInterval(P.timer);P.autoPaused=true;}
+ }else{
+  if(S.sound!==false)actx();
+  if(P||BR)reqWake();
+  if(P&&P.autoPaused){
+   P.autoPaused=false;P.awaitResume=true;
+   document.getElementById('pl-target').textContent='Paused';
+   document.getElementById('pl-btn').textContent='Resume →';
+  }
+ }
 });
 
 /* ================= VOICE COACH (speechSynthesis — on-device) ================= */
