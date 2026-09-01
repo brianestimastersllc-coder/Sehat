@@ -435,14 +435,19 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 
 /* ================= EXERCISES ================= */
 const LV={
- push:[{n:'Wall Pushup',t:'12 reps'},{n:'Incline Pushup',t:'10 reps',c:'Hands on table or bed edge'},{n:'Knee Pushup',t:'8 reps'},{n:'Full Pushup',t:'6–10 reps'}],
- squat:[{n:'Chair Squat',t:'10 reps',c:'Sit back to the chair, stand tall'},{n:'Squat',t:'12 reps'},{n:'Pause Squat',t:'10 reps',c:'2-sec hold at the bottom'},{n:'Squat',t:'20 reps'}],
- plank:[{n:'Knee Plank',t:20},{n:'Plank',t:25},{n:'Plank',t:40},{n:'Plank',t:60}],
- lunge:[{n:'Supported Reverse Lunge',t:'6 / side',c:'Hold a wall or chair for balance'},{n:'Reverse Lunge',t:'8 / side'},{n:'Reverse Lunge',t:'12 / side'}],
+ push:[{n:'Wall Pushup',t:'12 reps'},{n:'Incline Pushup',t:'10 reps',c:'Hands on table or bed edge'},{n:'Knee Pushup',t:'8 reps'},{n:'Full Pushup',t:'6–10 reps'},
+  {n:'Full Pushup',t:'12–15 reps',c:'Same move, real volume now'},{n:'Diamond Pushup',t:'8 reps',c:'Hands together under the chest'},{n:'Decline Pushup',t:'10 reps',c:'Feet up on a chair or bed'}],
+ squat:[{n:'Chair Squat',t:'10 reps',c:'Sit back to the chair, stand tall'},{n:'Squat',t:'12 reps'},{n:'Pause Squat',t:'10 reps',c:'2-sec hold at the bottom'},{n:'Squat',t:'20 reps'},
+  {n:'Pause Squat',t:'15 reps',c:'3-sec hold at the bottom'},{n:'Split Squat',t:'8 / side',c:'Staggered stance, drop straight down'},{n:'Jump Squat',t:'10 reps',c:'Explode up, land soft and quiet'}],
+ plank:[{n:'Knee Plank',t:20},{n:'Plank',t:25},{n:'Plank',t:40},{n:'Plank',t:60},
+  {n:'Plank',t:75},{n:'Shoulder Tap Plank',t:40,c:'Straight-arm plank — tap the opposite shoulder'},{n:'Plank',t:90}],
+ lunge:[{n:'Supported Reverse Lunge',t:'6 / side',c:'Hold a wall or chair for balance'},{n:'Reverse Lunge',t:'8 / side'},{n:'Reverse Lunge',t:'12 / side'},
+  {n:'Reverse Lunge',t:'15 / side'},{n:'Bulgarian Split Squat',t:'8 / side',c:'Back foot up on a chair'},{n:'Jumping Lunge',t:'8 / side',c:'Switch legs in the air, land soft'}],
  cardio:[
   [{n:'Fast March',c:'Pump the arms, knees up'},{n:'Shadow Boxing',c:'Loose shoulders, breathe'},{n:'Chair Squat Taps',c:'Quick light touches'},{n:'Step Jacks',c:'Low-impact jumping jack'}],
   [{n:'High Knees (soft)',c:'Land quiet'},{n:'Shadow Boxing',c:'Add body rotation'},{n:'Squats (tempo)',c:'Steady rhythm'},{n:'Jumping Jacks',c:'Full ones now'}],
-  [{n:'High Knees',c:'Push the pace'},{n:'Shadow Boxing',c:'Fast hands, move your feet'},{n:'Jump-to-Squat (light)',c:'Small hop, soft landing'},{n:'Mountain Climbers (slow)',c:'Hips low, controlled'}]
+  [{n:'High Knees',c:'Push the pace'},{n:'Shadow Boxing',c:'Fast hands, move your feet'},{n:'Jump-to-Squat (light)',c:'Small hop, soft landing'},{n:'Mountain Climbers (slow)',c:'Hips low, controlled'}],
+  [{n:'Burpee (step-back)',c:'Step back, not jump — still brutal'},{n:'Mountain Climbers',c:'Fast now, hips low'},{n:'Jump Squat',c:'Soft landings'},{n:'High Knees',c:'Full speed'}]
  ]
 };
 /* warmups rehearse what the session is about to load; cooldowns stretch what it just worked */
@@ -531,7 +536,11 @@ const POOL={
  cardioL2:[
   {n:'High Knees',c:'Push the pace'},
   {n:'Jump-to-Squat (light)',c:'Small hop, soft landing'},
-  {n:'Mountain Climbers (slow)',c:'Hips low, controlled'}]
+  {n:'Mountain Climbers (slow)',c:'Hips low, controlled'}],
+ cardioL3:[
+  {n:'Burpee (step-back)',c:'Step back, not jump — still brutal'},
+  {n:'Mountain Climbers',c:'Fast now, hips low'},
+  {n:'Jump Squat',c:'Soft landings'}]
 };
 const SESS={
  A:{name:'Session A — Push & Core',desc:'Chest, shoulders, arms and deep core. Today\'s mix is shuffled — same goal, fresh feel. 🎲',
@@ -541,10 +550,11 @@ const SESS={
     build(lv){const r=rng(dseed()+1);
      return [ex(LV.squat[lv.squat]),pick1(POOL.backB,r),pick1(POOL.legsB(lv),r),pick1(POOL.finB,r)];}},
  C:{name:'Session C — Stamina',desc:'Heart and lungs. Four moves, 30 seconds each — today\'s four are shuffled. 🎲',
-    build(lv){const stage=Math.min(lv.cardio,2);
+    build(lv){const stage=Math.min(lv.cardio,3);
      let pool=POOL.cardioBase.slice();
      if(stage>=1)pool=pool.concat(POOL.cardioL1);
      if(stage>=2)pool=pool.concat(POOL.cardioL2);
+     if(stage>=3)pool=pool.concat(POOL.cardioL3);
      return pickN(pool,4,rng(dseed()+2)).map(e=>({n:e.n,t:30,c:e.c}));}},
  D:{name:'Session D — Whole Body',desc:'One of everything — push, legs, core, and a 30-second stamina finisher. Shuffles daily. 🎲',
     build(lv){const r=rng(dseed()+3);
@@ -552,10 +562,11 @@ const SESS={
       {n:'Step-ups',t:'8 / side',c:'Stairs or a sturdy platform, drive through the heel'},
       {n:'Wall Sit',t:30,c:'Back flat on the wall, thighs toward parallel'}],r);
      const core=pick1(POOL.coreA.concat(POOL.backB),r);
-     const stage=Math.min(lv.cardio,2);
+     const stage=Math.min(lv.cardio,3);
      let cpool=POOL.cardioBase.slice();
      if(stage>=1)cpool=cpool.concat(POOL.cardioL1);
      if(stage>=2)cpool=cpool.concat(POOL.cardioL2);
+     if(stage>=3)cpool=cpool.concat(POOL.cardioL3);
      const fin=pick1(cpool,r);
      return [ex(LV.push[lv.push]),legs,core,{n:fin.n,t:30,c:fin.c}];}}
 };
@@ -642,7 +653,23 @@ skater:['<circle cx="84" cy="32" r="8"/><polyline points="86,40 96,72"/><polylin
 buttkicks:['<circle cx="100" cy="24" r="8"/><line x1="100" y1="32" x2="100" y2="68"/><line x1="100" y1="68" x2="100" y2="104"/><polyline points="100,68 106,88 118,74"/><line x1="100" y1="44" x2="116" y2="54"/><line x1="100" y1="44" x2="84" y2="52"/>',
  '<circle cx="100" cy="24" r="8"/><line x1="100" y1="32" x2="100" y2="68"/><line x1="100" y1="68" x2="102" y2="104"/><polyline points="100,68 94,88 82,74"/><line x1="100" y1="44" x2="84" y2="54"/><line x1="100" y1="44" x2="116" y2="52"/>'],
 kneeelbow:['<circle cx="98" cy="26" r="8"/><polyline points="100,34 100,70"/><polyline points="100,70 100,104"/><polyline points="100,70 116,58 112,78"/><polyline points="100,44 114,56"/>',
- '<circle cx="102" cy="26" r="8"/><polyline points="100,34 100,70"/><polyline points="100,70 100,104"/><polyline points="100,70 84,58 88,78"/><polyline points="100,44 86,56"/>']
+ '<circle cx="102" cy="26" r="8"/><polyline points="100,34 100,70"/><polyline points="100,70 100,104"/><polyline points="100,70 84,58 88,78"/><polyline points="100,44 86,56"/>'],
+diamond:['<circle cx="44" cy="52" r="7"/><polyline points="56,60 112,82 152,100"/><polyline points="60,62 60,98"/><path class="prop" d="M52,98 L60,91 L68,98 L60,104 Z"/>',
+ '<circle cx="42" cy="76" r="7"/><polyline points="54,84 112,92 152,101"/><polyline points="56,84 62,96"/><path class="prop" d="M52,98 L60,91 L68,98 L60,104 Z"/>'],
+decline:['<rect class="prop" x="142" y="76" width="40" height="28" rx="3"/><circle cx="40" cy="58" r="7"/><polyline points="52,64 110,78 144,82"/><polyline points="56,66 58,102"/>',
+ '<rect class="prop" x="142" y="76" width="40" height="28" rx="3"/><circle cx="38" cy="84" r="7"/><polyline points="50,88 110,82 144,82"/><polyline points="50,89 64,98 58,102"/>'],
+splitsquat:['<circle cx="96" cy="26" r="8"/><line x1="96" y1="34" x2="96" y2="72"/><polyline points="96,72 116,80 114,104"/><polyline points="96,72 78,86 68,104"/><line x1="96" y1="44" x2="110" y2="52"/>',
+ '<circle cx="96" cy="46" r="8"/><line x1="96" y1="54" x2="96" y2="84"/><polyline points="96,84 116,86 114,104"/><polyline points="96,84 80,98 68,104"/><line x1="96" y1="62" x2="110" y2="70"/>'],
+jumpsquat:['<circle cx="90" cy="54" r="8"/><polyline points="93,62 100,84"/><line x1="94" y1="66" x2="122" y2="60"/><polyline points="100,84 122,86 118,104"/><polyline points="100,84 84,96 80,104"/>',
+ '<circle cx="100" cy="16" r="8"/><line x1="100" y1="24" x2="100" y2="58"/><line x1="100" y1="32" x2="80" y2="18"/><line x1="100" y1="32" x2="120" y2="18"/><polyline points="100,58 92,88"/><polyline points="100,58 108,88"/>'],
+bulgarian:['<rect class="prop" x="128" y="78" width="42" height="7" rx="2"/><line class="prop" x1="132" y1="85" x2="132" y2="104"/><line class="prop" x1="166" y1="85" x2="166" y2="104"/><circle cx="86" cy="28" r="8"/><line x1="86" y1="36" x2="90" y2="72"/><polyline points="90,72 92,104"/><polyline points="90,72 128,78"/>',
+ '<rect class="prop" x="128" y="78" width="42" height="7" rx="2"/><line class="prop" x1="132" y1="85" x2="132" y2="104"/><line class="prop" x1="166" y1="85" x2="166" y2="104"/><circle cx="84" cy="48" r="8"/><line x1="84" y1="56" x2="88" y2="84"/><polyline points="88,84 92,104"/><polyline points="88,84 112,92 128,80"/>'],
+shouldertap:['<circle cx="42" cy="56" r="7"/><polyline points="54,62 112,80 152,100"/><line x1="56" y1="64" x2="58" y2="102"/><line x1="106" y1="80" x2="108" y2="102"/>',
+ '<circle cx="42" cy="56" r="7"/><polyline points="54,62 112,80 152,100"/><polyline points="54,64 68,78 58,60"/><line x1="106" y1="80" x2="108" y2="102"/>'],
+burpee:['<circle cx="100" cy="20" r="8"/><line x1="100" y1="28" x2="100" y2="66"/><line x1="100" y1="36" x2="84" y2="14"/><line x1="100" y1="36" x2="116" y2="14"/><polyline points="100,66 94,104"/><polyline points="100,66 106,104"/>',
+ '<circle cx="40" cy="62" r="7"/><polyline points="52,68 112,84 152,100"/><line x1="54" y1="70" x2="56" y2="102"/>'],
+jumplunge:['<circle cx="94" cy="40" r="8"/><line x1="94" y1="48" x2="96" y2="78"/><polyline points="96,78 118,84 116,104"/><polyline points="96,78 78,98 64,102"/><line x1="94" y1="56" x2="108" y2="64"/>',
+ '<circle cx="100" cy="18" r="8"/><line x1="100" y1="26" x2="100" y2="60"/><line x1="100" y1="34" x2="82" y2="24"/><line x1="100" y1="34" x2="118" y2="24"/><polyline points="100,60 118,74 114,90"/><polyline points="100,60 84,78 80,92"/>']
 };
 const INFO={
 pushwall:{t:'Wall Pushup',s:["Stand an arm's length from a wall, hands flat at shoulder height","Keep your body in one straight line and lean in until your nose nearly touches","Push back until arms are straight — that's one"],a:"Don't bend at the hips — move like a plank."},
@@ -684,7 +711,15 @@ wallsit:{t:'Wall Sit',s:["Back flat against a wall, feet out in front","Slide do
 inchworm:{t:'Inchworm Walkout',s:["Stand, fold forward, hands to the floor — bend the knees freely","Walk the hands out until you reach a plank","Walk them back in and stand tall — that's one"],a:"Bend the knees as much as you need; the back stays comfortable."},
 skater:{t:'Skater Steps',s:["Step wide to one side, the trailing leg sweeps behind","Swing the arms across like a speed skater","Push off and glide to the other side"],a:"Stay low and springy; step instead of jump to keep it quiet."},
 buttkicks:{t:'Butt Kicks',s:["Jog in place, kicking the heels up toward your glutes","Light on the toes, arms relaxed and moving","Faster = harder"],a:"Land soft — quiet feet mean happy knees."},
-kneeelbow:{t:'Standing Knee-to-Elbow',s:["Stand tall, hands behind your head","Drive one knee up while the opposite elbow comes down to meet it","Alternate sides in rhythm — a standing crunch with zero back strain"],a:"Rotate through the trunk; don't just tap and rush."}
+kneeelbow:{t:'Standing Knee-to-Elbow',s:["Stand tall, hands behind your head","Drive one knee up while the opposite elbow comes down to meet it","Alternate sides in rhythm — a standing crunch with zero back strain"],a:"Rotate through the trunk; don't just tap and rush."},
+diamond:{t:'Diamond Pushup',s:["Full pushup position, but hands together under your chest — thumbs and index fingers making a diamond","Lower until the chest touches your hands, elbows tucked close to the body","Press back up — the triceps carry this one"],a:"Elbows stay close, not flared out. Drop to knees if the form breaks."},
+decline:{t:'Decline Pushup',s:["Hands on the floor, feet up on a chair or the bed edge","Body one straight line, sloping down to your hands","Lower the chest to the floor, press up strong"],a:"Higher feet = harder. Keep the lower back from dipping."},
+splitsquat:{t:'Split Squat',s:["Stand in a long stagger — one foot forward, one back, both on the floor","Drop straight down until the back knee nearly touches","Push through the front heel to stand; finish all reps, then switch"],a:"Go straight down, not forward — the front knee stays over the ankle."},
+jumpsquat:{t:'Jump Squat',s:["Squat down to about half depth","Explode straight up off both feet","Land soft on the balls of your feet and flow straight into the next rep"],a:"Land quiet with bent knees. Loud landings mean the knees are absorbing it."},
+bulgarian:{t:'Bulgarian Split Squat',s:["Stand a stride in front of a chair, place the top of your back foot on it","Drop straight down on the front leg until the thigh is near parallel","Drive up through the front heel; finish the side, then switch"],a:"The hardest leg move here. Hold a wall for balance until it feels steady."},
+shouldertap:{t:'Shoulder Tap Plank',s:["Straight-arm plank — hands under shoulders, feet a little wider than usual","Lift one hand and tap the opposite shoulder","Set it down and switch — hips stay completely still"],a:"If the hips rock side to side, widen the feet or slow right down."},
+burpee:{t:'Burpee (step-back)',s:["From standing, squat down and place both hands on the floor","Step your feet back one at a time into a plank — no jumping needed","Step them back in, stand tall and reach overhead. That's one."],a:"Stepping instead of jumping keeps this joint-friendly. Pace yourself — burpees punish sprinting."},
+jumplunge:{t:'Jumping Lunge',s:["Drop into a reverse lunge","Jump up and switch legs in the air","Land soft directly into the next lunge"],a:"Land quiet with a bent knee. If the landing thuds, go back to normal lunges."}
 };
 const ALIAS={'Wall Pushup':'pushwall','Wall Pushups':'pushwall','Incline Pushup':'pushincline','Knee Pushup':'pushknee','Full Pushup':'pushfull',
 'Chair Squat':'chairsquat','Chair Squat Taps':'chairsquat','10 Chair Squats':'chairsquat',
@@ -698,7 +733,10 @@ const ALIAS={'Wall Pushup':'pushwall','Wall Pushups':'pushwall','Incline Pushup'
 'Arm Circles + Shoulder Rolls':'armcircle','Hip Flexor Stretch':'hipflexor',
 'Pike Pushup':'pike','Chair Dips':'chairdips','Reverse Snow Angels':'snowangel','Bear Shoulder Taps':'beartaps',
 'Heel Taps':'heeltaps','Glute Bridge March':'bridgemarch','Step-ups':'stepups','Wall Sit':'wallsit',
-'Inchworm Walkout':'inchworm','Skater Steps':'skater','Butt Kicks':'buttkicks','Standing Knee-to-Elbow':'kneeelbow'};
+'Inchworm Walkout':'inchworm','Skater Steps':'skater','Butt Kicks':'buttkicks','Standing Knee-to-Elbow':'kneeelbow',
+'Diamond Pushup':'diamond','Decline Pushup':'decline','Split Squat':'splitsquat','Jump Squat':'jumpsquat',
+'Bulgarian Split Squat':'bulgarian','Shoulder Tap Plank':'shouldertap','Burpee (step-back)':'burpee',
+'Jumping Lunge':'jumplunge','Mountain Climbers':'climber'};
 function demoSvg(key){const d=DEMOS[key];if(!d)return '';
  return '<svg class="demo" viewBox="0 0 200 120"><line class="gnd" x1="8" y1="104" x2="192" y2="104"/><g class="f1">'+d[0]+'</g><g class="f2">'+d[1]+'</g></svg>';}
 function showHow(key){
@@ -719,10 +757,10 @@ function closeHow(){
 }
 function showHowCurrent(){if(P&&P.steps[P.idx])showHow(ALIAS[P.steps[P.idx].n]);}
 function renderLib(){
- const groups=[['Push & upper body',['pushwall','pushincline','pushknee','pushfull','pike','chairdips','snowangel']],
-  ['Legs & glutes',['squat','chairsquat','lunge','stepups','wallsit','bridge','bridgemarch','calf']],
-  ['Core & back',['plank','sideplank','deadbug','birddog','superman','beartaps','heeltaps','inchworm']],
-  ['Stamina',['march','jacks','box','climber','skater','buttkicks','kneeelbow']],
+ const groups=[['Push & upper body',['pushwall','pushincline','pushknee','pushfull','diamond','decline','pike','chairdips','snowangel']],
+  ['Legs & glutes',['squat','chairsquat','lunge','splitsquat','bulgarian','jumpsquat','jumplunge','stepups','wallsit','bridge','bridgemarch','calf']],
+  ['Core & back',['plank','sideplank','shouldertap','deadbug','birddog','superman','beartaps','heeltaps','inchworm']],
+  ['Stamina',['march','jacks','box','climber','burpee','skater','buttkicks','kneeelbow']],
   ['Stretch & desk',['catcow','childpose','kneechest','fig4','chest','reach','neck','hipcircle','armcircle','hipflexor']]];
  document.getElementById('lib').innerHTML=groups.map(([g,keys])=>
   '<h4 style="font-size:13px;color:var(--acc);margin:12px 0 2px">'+g+'</h4><div class="libgrid">'+
@@ -899,6 +937,7 @@ function finishSession(feel){
  d.mins=(d.mins||0)+(P.elapsed||0);
  d.kcal=(d.kcal||0)+(P.kcal||0);
  if(P.tier!=='spark'){S.lastStrength=P.kind;S.lastStrengthDate=tk();}
+ let special=null;
  /* auto level-up: easy twice in a row on a full session */
  if(feel==='easy'&&P.tier==='full'){
   S.easy[P.kind]=(S.easy[P.kind]||0)+1;
@@ -907,13 +946,14 @@ function finishSession(feel){
    const keys=P.kind==='A'?['push','plank']:P.kind==='B'?['squat','lunge']:P.kind==='D'?['push','squat']:['cardio'];
    let upped=[];
    keys.forEach(k=>{const max=(k==='cardio'?LV.cardio.length:LV[k].length)-1;if(S.levels[k]<max){S.levels[k]++;upped.push(k);}});
-   if(upped.length){sfx.levelup();toast('⬆️ Level up! Next time gets a little stronger.');}
+   if(upped.length){sfx.levelup();special=('⬆️ Level up! Next time gets a little stronger.');}
+   else{sfx.levelup();special=('🏆 Top of this ladder — you have outgrown it. Tell Claude for the next tier.');}
   }
  } else if(feel==='hard'){S.easy[P.kind]=0;}
  else {S.easy[P.kind]=0;}
  save();P=null;
  const msgs={spark:'Chain alive. That 2 minutes mattered more than it felt. 🔗',lite:'Lite day logged — that is a full win in this system. 🌿',full:'Full session done. Quietly becoming someone who shows up. 💚'};
- toast(msgs[d.act]);render();
+ toast(special||msgs[d.act]);render();
 }
 
 /* ================= LOG WALK / HIKE ================= */
@@ -1345,7 +1385,15 @@ const MUSCLES={
  neck:'Neck release',
  hipcircle:'Hip mobility',
  armcircle:'Shoulder mobility',
- hipflexor:'Hip-flexor stretch'
+ hipflexor:'Hip-flexor stretch',
+ diamond:'Triceps · inner chest · front shoulders',
+ decline:'Upper chest · shoulders · triceps · core',
+ splitsquat:'Quads · glutes · balance',
+ jumpsquat:'Quads · glutes · calves · explosive power',
+ bulgarian:'Quads · glutes · deep balance & core',
+ shouldertap:'Deep core · anti-rotation · shoulders',
+ burpee:'Whole body — heart & lungs, legs, chest, core',
+ jumplunge:'Quads · glutes · calves · explosive power'
 };
 /* breathing technique per move — shown on screen and spoken */
 const BREATHE={
@@ -1388,7 +1436,15 @@ const BREATHE={
  inchworm:'Exhale walking out · inhale walking back',
  skater:'Steady rhythm — don\'t hold your breath',
  buttkicks:'Rhythm: in through the nose, out through the mouth',
- kneeelbow:'Exhale on every knee-to-elbow touch'
+ kneeelbow:'Exhale on every knee-to-elbow touch',
+ diamond:'Inhale down · exhale as you press up',
+ decline:'Inhale down · exhale as you press up',
+ splitsquat:'Inhale on the way down · exhale as you drive up',
+ jumpsquat:'Exhale sharply on every jump',
+ bulgarian:'Inhale down · exhale as you drive up',
+ shouldertap:'Steady breathing — never hold your breath',
+ burpee:'Exhale stepping back · inhale standing tall',
+ jumplunge:'Exhale on every jump'
 };
 
 /* ================= WAKE LOCK (screen stays on during sessions) ================= */
