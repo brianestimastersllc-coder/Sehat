@@ -264,6 +264,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
   <div class="card">
     <h3>🧭 Where you stand</h3>
     <div id="rank-box"></div>
+    <button class="btn ghost" style="margin-top:12px" onclick="openReport()">📤 Share progress report</button>
   </div>
   <div class="card">
     <h3>Numbers</h3>
@@ -402,6 +403,14 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
       <button class="btn ghost" onclick="finishSession('hard')">🥵 Hard</button>
     </div>
   </div>
+</div>
+
+<!-- ============ PROGRESS REPORT ============ -->
+<div class="overlay" id="report">
+  <div class="ov-top"><span class="muted small">Progress report</span><button class="x" onclick="closeReport()">Close ✕</button></div>
+  <p class="muted small" style="margin:6px 0 10px">Edit anything you like, then send it to a friend who'll check on you. Nothing is sent unless you tap Share.</p>
+  <textarea id="rp-text" style="flex:1;width:100%;min-height:260px;border:none;border-radius:14px;background:var(--card2);color:var(--ink);padding:12px;font-size:16px;line-height:1.55;font-family:inherit;resize:none"></textarea>
+  <div class="tier2" style="margin-top:10px"><button class="btn primary" onclick="shareReport()">📤 Share</button><button class="btn ghost" onclick="copyReport()">Copy</button></div>
 </div>
 
 <!-- ============ BREATHING ============ -->
@@ -953,7 +962,64 @@ function finishSession(feel){
  else {S.easy[P.kind]=0;}
  save();P=null;
  const msgs={spark:'Chain alive. That 2 minutes mattered more than it felt. 🔗',lite:'Lite day logged — that is a full win in this system. 🌿',full:'Full session done. Quietly becoming someone who shows up. 💚'};
- toast(special||msgs[d.act]);render();
+ toast(special||msgs[d.act]);render();openReport();
+}
+
+/* ================= PROGRESS REPORT (shareable) ================= */
+function buildReport(){
+ const now=new Date(),d=S.days[tk()]||{},L=[];
+ L.push('🌿 Sehat — progress report');
+ L.push(now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}));
+ L.push('');
+ const names={full:'Full session',lite:'Lite session',spark:'Spark',walk:'Walk',hike:'Hike'};
+ if(d.act){
+  const sn=d.session&&SESS[d.session]?' — '+SESS[d.session].name.replace(/^Session \w — /,''):'';
+  L.push('Today: '+(names[d.act]||'Done')+sn);
+  if(d.mins)L.push('⏱ '+d.mins+' min · 🔥 ~'+(d.kcal||0)+' kcal'+(d.feel?' · felt '+d.feel:''));
+  if(d.km)L.push('🏔️ '+d.km+' km hike');
+ }else L.push('Today: nothing logged yet');
+ L.push('');
+ const strip=[];let n7=0;
+ for(let i=6;i>=0;i--){const x=new Date(now);x.setDate(x.getDate()-i);const a=activeDay(tk(x));if(a)n7++;
+  strip.push(x.toLocaleDateString('en',{weekday:'short'}).slice(0,2)+(a?'✅':'⬜'));}
+ L.push('Last 7 days: '+n7+' of 7');
+ L.push(strip.join(' '));
+ L.push('');
+ const mon=new Date(now);mon.setDate(mon.getDate()-((mon.getDay()+6)%7));
+ let wk=0;for(let i=0;i<7;i++){const x=new Date(mon);x.setDate(x.getDate()+i);if(activeDay(tk(x)))wk++;}
+ L.push('🔗 Chain: '+chainCalc()+' days (best '+bestChain()+')');
+ L.push('📅 This week: '+wk+' days moved (4 = week won)');
+ const mk=tk().slice(0,7);let md=0,mm=0,kc=0;
+ Object.keys(S.days).forEach(k=>{if(k.slice(0,7)===mk){const v=S.days[k];if(v.act)md++;mm+=v.mins||0;kc+=v.kcal||0;}});
+ L.push('🗓 This month: '+md+' days · '+mm+' min · ~'+kc+' kcal');
+ const total=Object.keys(S.days).filter(k=>S.days[k].act).length;
+ let ri=0;for(let i=0;i<RANKS.length;i++)if(total>=RANKS[i][0])ri=i;
+ const nxt=RANKS[ri+1];
+ L.push('🧭 Rank: '+RANKS[ri][1]+' ('+total+' days moved'+(nxt?' · '+(nxt[0]-total)+' to '+nxt[1]:'')+')');
+ const lv=[['Pushup','push'],['Squat','squat'],['Plank','plank'],['Lunge','lunge'],['Cardio','cardio']].map(([l,k])=>{
+  const max=k==='cardio'?LV.cardio.length:LV[k].length;return l+' '+(Math.min(S.levels[k],max-1)+1)+'/'+max;});
+ L.push('💪 Levels: '+lv.join(' · '));
+ L.push('');
+ L.push('Keep me honest 🙏');
+ return L.join('\n');
+}
+function openReport(){
+ document.getElementById('rp-text').value=buildReport();
+ document.getElementById('report').classList.add('on');
+}
+function closeReport(){document.getElementById('report').classList.remove('on');}
+async function shareReport(){
+ const t=document.getElementById('rp-text').value;
+ if(navigator.share){
+  try{await navigator.share({text:t});return;}
+  catch(e){if(e&&e.name==='AbortError')return;}
+ }
+ copyReport();
+}
+async function copyReport(){
+ const ta=document.getElementById('rp-text');
+ try{await navigator.clipboard.writeText(ta.value);toast('Copied — paste it to your friend 📋');}
+ catch(e){ta.focus();ta.select();toast('Selected — tap Copy in the menu');}
 }
 
 /* ================= LOG WALK / HIKE ================= */
@@ -1045,7 +1111,8 @@ function renderToday(){
    (d.steps?'<div class="muted small" style="margin-top:6px">👟 '+d.steps.toLocaleString()+' steps (from Health)</div>':'')+
    '<div class="tier2" style="margin-top:12px"><button class="btn ghost" onclick="logWalk()">+ 15 min walk</button>'+
    '<button class="btn ghost" onclick="startSession(\'desk\')">Desk reset</button></div>'+
-   '<button class="btn ghost" style="margin-top:8px" onclick="sendHealth()">'+(d.hkSent?'❤️ Sent to Apple Health ✓ (send again)':'❤️ Log to Apple Health')+'</button>';
+   '<button class="btn ghost" style="margin-top:8px" onclick="sendHealth()">'+(d.hkSent?'❤️ Sent to Apple Health ✓ (send again)':'❤️ Log to Apple Health')+'</button>'+
+   '<button class="btn ghost" style="margin-top:8px" onclick="openReport()">📤 Share progress report</button>';
   return;
  }
  const sk=nextStrength(),s=SESS[sk];
