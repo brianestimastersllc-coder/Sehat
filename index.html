@@ -264,7 +264,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
   <div class="card">
     <h3>🧭 Where you stand</h3>
     <div id="rank-box"></div>
-    <button class="btn ghost" style="margin-top:12px" onclick="openReport()">📤 Share progress report</button>
+    <button class="btn ghost" style="margin-top:12px" onclick="openReport(true)">📤 Share full progress report</button>
   </div>
   <div class="card">
     <h3>Numbers</h3>
@@ -411,6 +411,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:12px 0}
   <p class="muted small" style="margin:6px 0 10px">Edit anything you like, then send it to a friend who'll check on you. Nothing is sent unless you tap Share.</p>
   <textarea id="rp-text" style="flex:1;width:100%;min-height:260px;border:none;border-radius:14px;background:var(--card2);color:var(--ink);padding:12px;font-size:16px;line-height:1.55;font-family:inherit;resize:none"></textarea>
   <div class="tier2" style="margin-top:10px"><button class="btn primary" onclick="shareReport()">📤 Share</button><button class="btn ghost" onclick="copyReport()">Copy</button></div>
+  <button class="btn ghost" id="rp-mode" style="margin-top:8px" onclick="toggleReportMode()"></button>
 </div>
 
 <!-- ============ BREATHING ============ -->
@@ -945,6 +946,9 @@ function finishSession(feel){
  d.session=P.kind;d.feel=feel;
  d.mins=(d.mins||0)+(P.elapsed||0);
  d.kcal=(d.kcal||0)+(P.kcal||0);
+ {const done=P.steps.slice(0,Math.min(P.idx+1,P.steps.length));
+  const pick=P.tier==='spark'?done.filter(s=>s.ph==='Spark'):done.filter(s=>/^Round 1 /.test(s.ph||'')&&!s.rest);
+  d.log={tier:P.tier,rounds:P.tier==='full'?3:1,moves:pick.map(s=>[s.n,s.t])};}
  if(P.tier!=='spark'){S.lastStrength=P.kind;S.lastStrengthDate=tk();}
  let special=null;
  /* auto level-up: easy twice in a row on a full session */
@@ -966,7 +970,29 @@ function finishSession(feel){
 }
 
 /* ================= PROGRESS REPORT (shareable) ================= */
-function buildReport(){
+let REP_FULL=false;
+function fmtT(t){return typeof t==='number'?t+' sec':t;}
+function buildToday(){
+ const now=new Date(),d=S.days[tk()]||{},L=[];
+ L.push('🌿 Today\'s workout — '+now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}));
+ if(!d.act){L.push('Nothing logged yet today.');return L.join('\n');}
+ const names={full:'Full session',lite:'Lite session',spark:'Spark',walk:'Walk',hike:'Hike'};
+ const sn=d.session&&SESS[d.session]&&d.log&&d.log.tier!=='spark'?' — '+SESS[d.session].name.replace(/^Session \w — /,''):'';
+ L.push((names[d.act]||'Done')+sn);
+ if(d.mins)L.push('⏱ '+d.mins+' min · 🔥 ~'+(d.kcal||0)+' kcal'+(d.feel?' · felt '+d.feel:''));
+ if(d.km)L.push('🏔️ '+d.km+' km hike');
+ if(d.log&&d.log.moves.length){
+  L.push('');
+  L.push(d.log.rounds>1?d.log.rounds+' rounds of:':'Moves:');
+  d.log.moves.forEach(m=>L.push('• '+m[0]+' — '+fmtT(m[1])));
+  if(d.log.tier!=='spark')L.push('+ warm-up and cool-down');
+ }
+ L.push('');
+ L.push('🔗 Chain: '+chainCalc()+' days');
+ return L.join('\n');
+}
+function buildReport(){return REP_FULL?buildFull():buildToday();}
+function buildFull(){
  const now=new Date(),d=S.days[tk()]||{},L=[];
  L.push('🌿 Sehat — progress report');
  L.push(now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}));
@@ -1003,10 +1029,16 @@ function buildReport(){
  L.push('Keep me honest 🙏');
  return L.join('\n');
 }
-function openReport(){
- document.getElementById('rp-text').value=buildReport();
+function openReport(full){
+ REP_FULL=full===true;
+ refreshReport();
  document.getElementById('report').classList.add('on');
 }
+function refreshReport(){
+ document.getElementById('rp-text').value=buildReport();
+ document.getElementById('rp-mode').textContent=REP_FULL?'Show today\'s workout only':'Add full progress instead';
+}
+function toggleReportMode(){REP_FULL=!REP_FULL;refreshReport();}
 function closeReport(){document.getElementById('report').classList.remove('on');}
 async function shareReport(){
  const t=document.getElementById('rp-text').value;
@@ -1112,7 +1144,7 @@ function renderToday(){
    '<div class="tier2" style="margin-top:12px"><button class="btn ghost" onclick="logWalk()">+ 15 min walk</button>'+
    '<button class="btn ghost" onclick="startSession(\'desk\')">Desk reset</button></div>'+
    '<button class="btn ghost" style="margin-top:8px" onclick="sendHealth()">'+(d.hkSent?'❤️ Sent to Apple Health ✓ (send again)':'❤️ Log to Apple Health')+'</button>'+
-   '<button class="btn ghost" style="margin-top:8px" onclick="openReport()">📤 Share progress report</button>';
+   '<button class="btn ghost" style="margin-top:8px" onclick="openReport()">📤 Share today\'s workout</button>';
   return;
  }
  const sk=nextStrength(),s=SESS[sk];
